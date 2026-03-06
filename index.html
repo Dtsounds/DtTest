@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Launcher</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #0d0d1a;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+}
+h1 {
+  font-size: clamp(1.6rem, 6vw, 2.8rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #3bf0ff, #6c3bff, #ff3bac);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 10px; text-align: center;
+}
+p { color: #777; margin-bottom: 50px; font-size: 1rem; text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; max-width: 700px; width: 100%; }
+a { text-decoration: none; }
+.card {
+  background: #1a1a35; border: 2px solid #333; border-radius: 20px;
+  padding: 30px 24px; text-align: center; transition: all 0.25s; cursor: pointer;
+}
+.card:hover { transform: translateY(-6px); border-color: #6c3bff; box-shadow: 0 12px 40px rgba(108,59,255,0.3); }
+.card-emoji { font-size: 3.5rem; display: block; margin-bottom: 14px; }
+.card-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+.card-desc { color: #888; font-size: 0.9rem; line-height: 1.5; }
+.card.purple { border-top: 4px solid #6c3bff; }
+.card.cyan   { border-top: 4px solid #3bf0ff; }
+</style>
+</head>
+<body>
+  <h1>Welcome to the Academy!</h1>
+  <p>Pick a game to play</p>
+  <div class="grid">
+    <a href="/kids-coder.html">
+      <div class="card purple">
+        <span class="card-emoji">🤖</span>
+        <div class="card-title">Future Coder Academy</div>
+        <div class="card-desc">Learn coding and AI through 5 fun worlds. Perfect for beginners!</div>
+      </div>
+    </a>
+    <a href="/math-game.html">
+      <div class="card cyan">
+        <span class="card-emoji">🚀</span>
+        <div class="card-title">Math Blast!</div>
+        <div class="card-desc">Blast rockets with maths skills. How fast can you go?</div>
+      </div>
+    </a>
+  </div>
+</body>
+</html>
