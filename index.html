@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MC Bedrock Mod Creator</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo">⛏ MC MOD CREATOR <span>for Bedrock</span></div>
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" onclick="toggleJsonPanel()">📄 JSON Preview</button>
+      <button class="btn btn-secondary btn-sm" onclick="showInstallModal()">📖 Install Guide</button>
+      <button class="btn btn-primary" onclick="doExport()">⬇ Export .mcaddon</button>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Addon</div>
+        <div class="nav-item active" data-tab="project" onclick="switchTab('project')">
+          <span class="icon">🗂</span> Project
+        </div>
+        <div class="nav-item" data-tab="export" onclick="switchTab('export')">
+          <span class="icon">📦</span> Export
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Creators</div>
+        <div class="nav-item" data-tab="items" onclick="switchTab('items')">
+          <span class="icon">🗡</span> Items
+          <span class="nav-badge" id="badge-items">0</span>
+        </div>
+        <div class="nav-item" data-tab="blocks" onclick="switchTab('blocks')">
+          <span class="icon">🟫</span> Blocks
+          <span class="nav-badge" id="badge-blocks">0</span>
+        </div>
+        <div class="nav-item" data-tab="entities" onclick="switchTab('entities')">
+          <span class="icon">🐾</span> Entities
+          <span class="nav-badge" id="badge-entities">0</span>
+        </div>
+        <div class="nav-item" data-tab="recipes" onclick="switchTab('recipes')">
+          <span class="icon">⚒</span> Recipes
+          <span class="nav-badge" id="badge-recipes">0</span>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <div style="font-size:11px;color:var(--text-dim);text-align:center;line-height:1.6">
+          MC Bedrock Mod Creator<br>
+          Format v1.20.10
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content">
+      <!-- Content rendered by app.js -->
+    </main>
+
+    <!-- JSON PREVIEW PANEL -->
+    <div id="json-panel">
+      <div class="json-panel-header">
+        <span class="json-panel-title">JSON Preview</span>
+        <button class="icon-btn" onclick="copyJson()" title="Copy JSON">⎘ Copy</button>
+      </div>
+      <div class="json-panel-tabs" id="json-tabs"></div>
+      <pre id="json-output">// Select an item to preview its JSON output</pre>
+    </div>
+
+  </div><!-- end main-layout -->
+</div><!-- end app -->
+
+<!-- INSTALLATION MODAL -->
+<div class="modal-overlay hidden" id="install-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📖 How to Install Your Addon</span>
+      <button class="close-btn" onclick="closeModal('install-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:16px">
+        <strong>Quick method:</strong> Double-clicking the downloaded <code>.mcaddon</code> file
+        will automatically import it into Minecraft Bedrock on Windows and Android.
+      </div>
+
+      <div class="install-tabs">
+        <div class="install-tab active" onclick="setInstallTab('windows')">🪟 Windows</div>
+        <div class="install-tab" onclick="setInstallTab('android')">📱 Android</div>
+        <div class="install-tab" onclick="setInstallTab('ios')">🍎 iOS</div>
+        <div class="install-tab" onclick="setInstallTab('world')">🌍 Applying to World</div>
+      </div>
+
+      <!-- Windows -->
+      <div class="install-content active" id="tab-windows">
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Click "Export .mcaddon" above</div>
+              <div class="step-desc">Download the <code>.mcaddon</code> file to your computer.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Double-click the file (easiest)</div>
+              <div class="step-desc">Windows will automatically open Minecraft and import the addon. Skip to Step 5.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Manual install (if double-click doesn't work)</div>
+              <div class="step-desc">Rename the file extension from <code>.mcaddon</code> to <code>.zip</code>, then extract it. Copy the <code>_BP</code> folder to:</div>
+              <div class="path-box">%localappdata%\Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\games\com.mojang\behavior_packs\</div>
+              <div class="step-desc" style="margin-top:8px">Copy the <code>_RP</code> folder to:</div>
+              <div class="path-box">%localappdata%\Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\games\com.mojang\resource_packs\</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Add textures (if needed)</div>
+              <div class="step-desc">Placeholder textures are generated automatically. To use custom textures, replace the <code>.png</code> files inside the <code>_RP/textures/</code> folders with your 16×16 pixel art images.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Launch Minecraft and apply to a world</div>
+              <div class="step-desc">Open Minecraft → Create or Edit a World → Resource Packs / Behavior Packs → Activate your addon → Play!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android -->
+      <div class="install-content" id="tab-android">
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Export and transfer the file</div>
+              <div class="step-desc">Download the <code>.mcaddon</code> file on your PC and transfer to your Android device via USB, cloud storage, or email.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Open the file with Minecraft</div>
+              <div class="step-desc">Tap the <code>.mcaddon</code> file in your file manager. Select "Open with Minecraft". The game will import it automatically.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Manual path (alternative)</div>
+              <div class="path-box">/storage/emulated/0/games/com.mojang/behavior_packs/</div>
+              <div class="path-box" style="margin-top:6px">/storage/emulated/0/games/com.mojang/resource_packs/</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS -->
+      <div class="install-content" id="tab-ios">
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Get the file on your device</div>
+              <div class="step-desc">AirDrop, iCloud Drive, or any other method to get the <code>.mcaddon</code> file to your iPhone/iPad.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Open with Minecraft</div>
+              <div class="step-desc">In Files app, tap and hold the <code>.mcaddon</code> file → Share → Open with Minecraft. The addon will be imported.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Apply to a world</div>
+              <div class="step-desc">Go to world settings and activate both the Behavior Pack and Resource Pack.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Applying to World -->
+      <div class="install-content" id="tab-world">
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Open or Create a World</div>
+              <div class="step-desc">In Minecraft, go to Play → Create New World (or edit an existing one).</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Activate Behavior Pack</div>
+              <div class="step-desc">Scroll to "Behavior Packs" in world settings → My Packs → find your addon → tap Activate.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Activate Resource Pack</div>
+              <div class="step-desc">Go to "Resource Packs" → My Packs → find your addon → tap Activate.</div>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Note: Experimental Features</div>
+              <div class="step-desc">Some features may require "Holiday Creator Features" or "Beta APIs" to be enabled in Experiments. Check the Experiments section in world settings if items or blocks don't appear.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('install-modal')">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<!-- CELL EDITOR POPUP (for recipe grid) -->
+<div class="cell-popup hidden" id="cell-popup">
+  <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600">INGREDIENT</div>
+  <input type="text" id="cell-input" placeholder="e.g. minecraft:stick" autocomplete="off">
+  <div class="cell-popup-actions">
+    <button class="btn btn-sm btn-danger" onclick="clearCell()">Clear</button>
+    <button class="btn btn-sm btn-primary" onclick="confirmCell()">Set</button>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script src="js/generators.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
