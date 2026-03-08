@@ -44,6 +44,12 @@ async function makeItemTexturePng(hexColor) {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
+// Convert a data URL to a Blob
+async function dataUrlToBlob(dataUrl) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
 async function exportAddon(state) {
   const ns = (state.project.namespace || 'myaddon').toLowerCase().replace(/[^a-z0-9_]/g, '_');
   const name = (state.project.name || 'MyAddon').replace(/[^a-zA-Z0-9 _-]/g, '');
@@ -114,19 +120,23 @@ async function exportAddon(state) {
   const itemTexDir = texDir.folder('items');
   const blockTexDir = texDir.folder('blocks');
 
-  // Item textures (placeholder colored PNGs)
+  // Item textures – use painted texture if available, else generate placeholder
   for (const item of state.items) {
     const id = item.identifier.includes(':') ? item.identifier : `${ns}:${item.identifier}`;
     const texName = id.replace(':', '_');
-    const blob = await makeItemTexturePng(item.color || '#a0a0a0');
+    const blob = item.textureDataUrl
+      ? await dataUrlToBlob(item.textureDataUrl)
+      : await makeItemTexturePng(item.color || '#a0a0a0');
     itemTexDir.file(`${texName}.png`, blob);
   }
 
-  // Block textures
+  // Block textures – use painted texture if available, else generate placeholder
   for (const block of state.blocks) {
     const id = block.identifier.includes(':') ? block.identifier : `${ns}:${block.identifier}`;
     const texName = id.replace(':', '_');
-    const blob = await makeTexturePng(block.color || '#888888');
+    const blob = block.textureDataUrl
+      ? await dataUrlToBlob(block.textureDataUrl)
+      : await makeTexturePng(block.color || '#888888');
     blockTexDir.file(`${texName}.png`, blob);
   }
 

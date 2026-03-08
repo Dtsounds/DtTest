@@ -302,8 +302,10 @@ function renderItems(container) {
     ${state.items.map(item => `
     <div class="element-card ${state.ui.editingItem === item.id ? 'active' : ''}"
          onclick="state.ui.editingItem='${item.id}';renderItems(document.getElementById('main-content'));updateJsonPreview()">
-      <div class="element-icon" style="background:${escapeHtml(item.color || '#a0a0a0')}20;border-color:${escapeHtml(item.color || '#a0a0a0')}60">
-        ${item.isFood ? '🍖' : item.isWeapon ? '⚔' : item.isThrowable ? '🪃' : '📦'}
+      <div class="element-icon" style="background:${escapeHtml(item.color || '#a0a0a0')}20;border-color:${escapeHtml(item.color || '#a0a0a0')}60;overflow:hidden;padding:0">
+        ${item.textureDataUrl
+          ? `<img src="${item.textureDataUrl}" width="100%" height="100%" style="image-rendering:pixelated;display:block">`
+          : (item.isFood ? '🍖' : item.isWeapon ? '⚔' : item.isThrowable ? '🪃' : '📦')}
       </div>
       <div class="element-info">
         <div class="element-name">${escapeHtml(item.displayName)}</div>
@@ -358,12 +360,28 @@ function renderItemEditor(item) {
         <input type="number" min="1" max="64" value="${item.maxStackSize}"
           oninput="getItem('${item.id}').maxStackSize=parseInt(this.value)||1;updateJsonPreview()">
       </div>
-      <div class="form-group">
-        <label>Icon Color <span style="font-weight:400;color:var(--text-dim)">(placeholder texture)</span></label>
-        <div class="color-row">
-          <input type="color" value="${item.color || '#a07850'}"
-            oninput="getItem('${item.id}').color=this.value;renderItems(document.getElementById('main-content'))">
-          <span style="font-size:12px;color:var(--text-muted)">Replace texture PNG after export for final look</span>
+      <div class="form-group full">
+        <label>Texture</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${item.textureDataUrl
+            ? `<img src="${item.textureDataUrl}" width="32" height="32"
+                 style="image-rendering:pixelated;border:1px solid var(--border);border-radius:4px"
+                 title="Custom texture">`
+            : `<div style="width:32px;height:32px;background:${item.color||'#a07850'};
+                 border:1px solid var(--border);border-radius:4px;flex-shrink:0" title="Base color preview"></div>`}
+          <button class="btn btn-sm btn-secondary" onclick="openTexturePainter('${item.id}','item')">
+            🎨 ${item.textureDataUrl ? 'Edit Texture' : 'Paint Texture'}
+          </button>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="color" value="${item.color || '#a07850'}"
+              oninput="getItem('${item.id}').color=this.value;renderItems(document.getElementById('main-content'))"
+              title="Base color (used for placeholder if no custom texture)">
+            <span style="font-size:11px;color:var(--text-muted)">Base color</span>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:6px">
+          Paint a custom 16×16 pixel-art texture, or use the base color as a quick placeholder.
+          Items should have a clear silhouette — transparent edges define the icon shape.
         </div>
       </div>
     </div>
@@ -524,8 +542,10 @@ function renderBlocks(container) {
     ${state.blocks.map(block => `
     <div class="element-card ${state.ui.editingBlock === block.id ? 'active' : ''}"
          onclick="state.ui.editingBlock='${block.id}';renderBlocks(document.getElementById('main-content'));updateJsonPreview()">
-      <div class="element-icon" style="background:${escapeHtml(block.color)}40;border-color:${escapeHtml(block.color)}80">
-        🟫
+      <div class="element-icon" style="background:${escapeHtml(block.color)}40;border-color:${escapeHtml(block.color)}80;overflow:hidden;padding:0">
+        ${block.textureDataUrl
+          ? `<img src="${block.textureDataUrl}" width="100%" height="100%" style="image-rendering:pixelated;display:block">`
+          : '🟫'}
       </div>
       <div class="element-info">
         <div class="element-name">${escapeHtml(block.displayName)}</div>
@@ -570,12 +590,28 @@ function renderBlockEditor(block) {
             `<option ${block.category===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group">
-        <label>Block Color <span style="font-weight:400;color:var(--text-dim)">(map & placeholder)</span></label>
-        <div class="color-row">
-          <input type="color" value="${block.color || '#888888'}"
-            oninput="getBlock('${block.id}').color=this.value;getBlock('${block.id}').mapColor=this.value;renderBlocks(document.getElementById('main-content'))">
-          <span style="font-size:12px;color:var(--text-muted)">Also sets map color</span>
+      <div class="form-group full">
+        <label>Texture</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${block.textureDataUrl
+            ? `<img src="${block.textureDataUrl}" width="32" height="32"
+                 style="image-rendering:pixelated;border:1px solid var(--border);border-radius:4px"
+                 title="Custom texture">`
+            : `<div style="width:32px;height:32px;background:${block.color||'#888888'};
+                 border:1px solid var(--border);border-radius:4px;flex-shrink:0" title="Base color preview"></div>`}
+          <button class="btn btn-sm btn-secondary" onclick="openTexturePainter('${block.id}','block')">
+            🎨 ${block.textureDataUrl ? 'Edit Texture' : 'Paint Texture'}
+          </button>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="color" value="${block.color || '#888888'}"
+              oninput="getBlock('${block.id}').color=this.value;getBlock('${block.id}').mapColor=this.value;renderBlocks(document.getElementById('main-content'))"
+              title="Base color (used for map color and placeholder)">
+            <span style="font-size:11px;color:var(--text-muted)">Base / map color</span>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:6px">
+          Paint a 16×16 pixel-art tile. The same texture appears on all 6 faces of the block.
+          Keep it tileable — avoid strong directional gradients at the edges.
         </div>
       </div>
     </div>
