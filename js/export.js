@@ -182,9 +182,26 @@ async function exportAddon(state) {
       const clientJson = generateEntityClientEntity(entity, ns);
       rpEntDir.file(`${shortId}.json`, JSON.stringify(clientJson, null, 2));
 
-      const blob = entity.textureDataUrl
-        ? await dataUrlToBlob(entity.textureDataUrl)
-        : await makeEntityTexturePng(entity.color || '#888888', entity.bodyType || 'humanoid');
+      let blob;
+      if (entity.textureDataUrl) {
+        // Upscale the 16×16 painted texture to the correct entity skin resolution
+        const is32h = entity.bodyType === 'quadruped' || entity.bodyType === 'bird' || entity.bodyType === 'slime';
+        const tw = 64, th = is32h ? 32 : 64;
+        blob = await new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = tw; c.height = th;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = false; // pixelated upscale
+            ctx.drawImage(img, 0, 0, tw, th);
+            c.toBlob(resolve, 'image/png');
+          };
+          img.src = entity.textureDataUrl;
+        });
+      } else {
+        blob = await makeEntityTexturePng(entity.color || '#888888', entity.bodyType || 'humanoid');
+      }
       entTexDir.file(`${texName}.png`, blob);
     }
   }

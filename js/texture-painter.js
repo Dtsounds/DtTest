@@ -655,7 +655,29 @@ function _fillPixelsFromBaseColor(color, type, shape) {
   }
 
   if (type === 'entity') {
-    for (let i = 0; i < 256; i++) pixels[i] = color;
+    // Start transparent, then paint each UV region with a distinct shade
+    for (let i = 0; i < 256; i++) pixels[i] = null;
+    const obj = painterState.targetId
+      ? (painterState.targetType === 'entity' ? getEntity(painterState.targetId) : null)
+      : null;
+    const bodyType = (obj && obj.bodyType) || 'humanoid';
+    const guides = ENTITY_UV_GUIDES[bodyType] || ENTITY_UV_GUIDES.humanoid;
+    const shades = [0, 30, -25, 55, -50, 20]; // per-region brightness offsets
+    guides.forEach((g, gi) => {
+      const shade = shades[gi % shades.length];
+      const c = _shadeHex(color, shade);
+      for (let py = g.y; py < g.y + g.h && py < 16; py++) {
+        for (let px = g.x; px < g.x + g.w && px < 16; px++) {
+          // Top row of each region is highlighted, bottom is darkened
+          const rowInRegion = py - g.y;
+          const regionH = Math.min(g.h, 16 - g.y);
+          let rc = c;
+          if (rowInRegion === 0) rc = _shadeHex(c, 40);
+          else if (rowInRegion >= regionH - 1) rc = _shadeHex(c, -40);
+          pixels[py * 16 + px] = rc;
+        }
+      }
+    });
     return;
   }
 

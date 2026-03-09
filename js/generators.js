@@ -240,9 +240,9 @@ function generateEntityBP(entity, namespace) {
     };
   }
 
-  if (entity.knockback) {
+  if (parseFloat(entity.knockbackResist) > 0) {
     components['minecraft:knockback_resistance'] = {
-      value: parseFloat(entity.knockbackResist) || 0
+      value: parseFloat(entity.knockbackResist)
     };
   }
 

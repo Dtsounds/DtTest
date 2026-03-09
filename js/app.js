@@ -825,7 +825,7 @@ function renderEntityEditor(entity) {
       </div>
       <div class="form-group">
         <label>Body Type</label>
-        <select onchange="getEntity('${entity.id}').bodyType=this.value;updateJsonPreview()">
+        <select onchange="getEntity('${entity.id}').bodyType=this.value;updateJsonPreview();renderEntities(document.getElementById('main-content'))">
           ${[
             ['humanoid','👤 Humanoid (Steve/zombie shape)'],
             ['undead',  '💀 Undead (zombie geometry)'],
@@ -835,7 +835,7 @@ function renderEntityEditor(entity) {
             ['bat',     '🦇 Bat (small flying)'],
           ].map(([v,l]) => `<option value="${v}" ${entity.bodyType===v?'selected':''}>${l}</option>`).join('')}
         </select>
-        <div class="hint">Controls the 3D skeleton used to render the entity in-game.</div>
+        <div class="hint">Controls the 3D skeleton used to render the entity in-game. Change this before painting the texture so the UV guide matches.</div>
       </div>
     </div>
   </div>
