@@ -339,6 +339,33 @@ function generateRecipeBP(recipe, namespace) {
   return null;
 }
 
+// ── ITEM RESOURCE PACK ─────────────────────────────────────────────────────
+
+function generateItemRP(item, namespace) {
+  const id = resolveId(item.identifier, namespace);
+  const texName = id.replace(':', '_');
+
+  const categoryMap = {
+    Items: 'Items', Nature: 'Nature',
+    Equipment: 'Equipment', Construction: 'Construction', Command: 'none'
+  };
+
+  return {
+    format_version: '1.10.0',
+    'minecraft:item': {
+      description: {
+        identifier: id,
+        category: categoryMap[item.category] || 'Items'
+      },
+      components: {
+        'minecraft:icon': {
+          texture: texName
+        }
+      }
+    }
+  };
+}
+
 // ── RESOURCE PACK HELPERS ─────────────────────────────────────────────────
 
 function generateTerrainTexture(blocks, namespace) {

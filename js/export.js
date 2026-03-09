@@ -116,6 +116,18 @@ async function exportAddon(state) {
 
   rp.file('manifest.json', JSON.stringify(generateManifestRP(state.project), null, 2));
 
+  // Item RP definitions (required for items to register in 1.20+)
+  if (state.items.length > 0) {
+    const rpItemsDir = rp.folder('items');
+    for (const item of state.items) {
+      const shortId = item.identifier.includes(':')
+        ? item.identifier.split(':')[1]
+        : item.identifier;
+      const json = generateItemRP(item, ns);
+      if (json) rpItemsDir.file(`${shortId}.json`, JSON.stringify(json, null, 2));
+    }
+  }
+
   const texDir = rp.folder('textures');
   const itemTexDir = texDir.folder('items');
   const blockTexDir = texDir.folder('blocks');
