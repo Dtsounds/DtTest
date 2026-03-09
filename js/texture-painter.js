@@ -26,7 +26,9 @@ const painterState = {
   color: '#8b5e3c',
   painting: false,
   targetId: null,
-  targetType: null,  // 'item' | 'block'
+  targetType: null,  // 'item' | 'block' | 'entity'
+  history: [],       // undo/redo stacks
+  historyIdx: -1,
 };
 
 // ── Open / Close ───────────────────────────────────────────────────────────
@@ -35,6 +37,8 @@ function openTexturePainter(targetId, targetType) {
   painterState.targetId = targetId;
   painterState.targetType = targetType;
   painterState.tool = 'pencil';
+  painterState.history = [];
+  painterState.historyIdx = -1;
 
   const obj = targetType === 'item' ? getItem(targetId) : targetType === 'entity' ? getEntity(targetId) : getBlock(targetId);
   const existing = obj ? obj.textureDataUrl : null;
@@ -42,19 +46,69 @@ function openTexturePainter(targetId, targetType) {
   if (existing) {
     loadPixelsFromDataUrl(existing).then(pixels => {
       painterState.pixels = pixels;
+      tpPushHistory();
       _buildPainterModal();
     });
   } else {
     painterState.pixels = new Array(256).fill(null);
     if (obj) _fillPixelsFromBaseColor(obj.color || '#888888', targetType, obj.itemShape || 'flat');
+    tpPushHistory();
     _buildPainterModal();
   }
+  document.addEventListener('keydown', _handlePainterKeydown);
 }
 
 function closeTexturePainter() {
   const modal = document.getElementById('tp-modal');
   if (modal) modal.remove();
   painterState.painting = false;
+  document.removeEventListener('keydown', _handlePainterKeydown);
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────────────
+
+function _handlePainterKeydown(e) {
+  if (!document.getElementById('tp-modal')) return;
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); tpUndo(); }
+    if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); tpRedo(); }
+  }
+}
+
+// ── History (undo/redo) ────────────────────────────────────────────────────
+
+function tpPushHistory() {
+  // Trim anything after current position
+  painterState.history = painterState.history.slice(0, painterState.historyIdx + 1);
+  painterState.history.push([...painterState.pixels]);
+  if (painterState.history.length > 40) painterState.history.shift();
+  painterState.historyIdx = painterState.history.length - 1;
+  _updateUndoButtons();
+}
+
+function tpUndo() {
+  if (painterState.historyIdx > 0) {
+    painterState.historyIdx--;
+    painterState.pixels = [...painterState.history[painterState.historyIdx]];
+    tpRedraw();
+    _updateUndoButtons();
+  }
+}
+
+function tpRedo() {
+  if (painterState.historyIdx < painterState.history.length - 1) {
+    painterState.historyIdx++;
+    painterState.pixels = [...painterState.history[painterState.historyIdx]];
+    tpRedraw();
+    _updateUndoButtons();
+  }
+}
+
+function _updateUndoButtons() {
+  const undoBtn = document.getElementById('tp-undo');
+  const redoBtn = document.getElementById('tp-redo');
+  if (undoBtn) undoBtn.disabled = painterState.historyIdx <= 0;
+  if (redoBtn) redoBtn.disabled = painterState.historyIdx >= painterState.history.length - 1;
 }
 
 // ── Build modal DOM ────────────────────────────────────────────────────────
@@ -69,7 +123,7 @@ function _buildPainterModal() {
   overlay.style.cssText = 'z-index:2000';
 
   overlay.innerHTML = `
-<div class="modal" style="max-width:700px;width:98%;max-height:90vh;overflow-y:auto">
+<div class="modal" style="max-width:760px;width:98%;max-height:92vh;overflow-y:auto">
   <div class="modal-header">
     <span class="modal-title">🎨 Texture Painter
       <span style="font-size:12px;color:var(--text-dim);font-weight:400;margin-left:8px">16 × 16 pixel art</span>
@@ -102,20 +156,26 @@ function _buildPainterModal() {
             style="width:32px;height:32px;border:1px solid var(--border);border-radius:3px;image-rendering:pixelated"></canvas>
           <canvas id="tp-preview-16" width="16" height="16"
             style="width:16px;height:16px;border:1px solid var(--border);border-radius:2px;image-rendering:pixelated"></canvas>
-          <span style="font-size:11px;color:var(--text-muted)">64px&nbsp;&nbsp;32px&nbsp;&nbsp;16px (true size)</span>
+          <span style="font-size:11px;color:var(--text-muted)">64px&nbsp;&nbsp;32px&nbsp;&nbsp;16px</span>
         </div>
       </div>
 
       <!-- Tools -->
       <div>
         <div class="form-section-title" style="margin-bottom:6px">Tools</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
           <button id="tp-tool-pencil" class="btn btn-sm btn-primary"
-            onclick="tpSetTool('pencil')" title="Draw pixels">✏ Draw</button>
+            onclick="tpSetTool('pencil')" title="Draw pixels (P)">✏ Draw</button>
           <button id="tp-tool-eraser" class="btn btn-sm btn-secondary"
-            onclick="tpSetTool('eraser')" title="Erase to transparent">◻ Erase</button>
+            onclick="tpSetTool('eraser')" title="Erase to transparent (E)">◻ Erase</button>
           <button id="tp-tool-fill" class="btn btn-sm btn-secondary"
-            onclick="tpSetTool('fill')" title="Flood-fill region">🪣 Fill</button>
+            onclick="tpSetTool('fill')" title="Flood-fill region (F)">🪣 Fill</button>
+          <button id="tp-tool-eyedropper" class="btn btn-sm btn-secondary"
+            onclick="tpSetTool('eyedropper')" title="Pick color from canvas (I)">💧 Pick</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="tp-undo" class="btn btn-sm btn-secondary" onclick="tpUndo()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+          <button id="tp-redo" class="btn btn-sm btn-secondary" onclick="tpRedo()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
         </div>
       </div>
 
@@ -156,24 +216,44 @@ function _buildPainterModal() {
         <button class="btn btn-sm btn-secondary" onclick="tpClear()">
           🗑 Clear All (transparent)
         </button>
+        <button class="btn btn-sm btn-secondary" onclick="tpImportPng()" title="Import any PNG or image file as texture">
+          📁 Import PNG / Image
+        </button>
       </div>
+
+      <!-- Piskel Integration -->
+      <div style="background:rgba(33,150,243,0.08);border:1px solid rgba(33,150,243,0.25);border-radius:6px;padding:12px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64b5f6;margin-bottom:8px">
+          🎨 Advanced Editor
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+          Use <strong style="color:#90caf9">Piskel</strong> for animation frames, layers, and advanced drawing tools.
+          Your current texture will download automatically so you can import it in Piskel.
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-blue" onclick="tpOpenInPiskel()" title="Download current texture and open Piskel in a new tab">
+            🌐 Open in Piskel ↗
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="tpDownloadTexture()" title="Download current texture as PNG">
+            ⬇ Download PNG
+          </button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:8px;line-height:1.5">
+          After editing in Piskel: File → Export → PNG → use <strong>Import PNG</strong> above.
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- Tips -->
   <div class="info-box" style="margin:14px 16px 0;font-size:12px;line-height:1.7">
-    <strong>Texture Guidelines:</strong>
-    Minecraft textures are <strong>16×16 pixels</strong> — keep your art simple and readable at small sizes.
+    <strong>Tips:</strong>
+    <strong>Ctrl+Z</strong> undo · <strong>Ctrl+Y</strong> redo · <strong>P</strong> pencil · <strong>E</strong> erase · <strong>F</strong> fill · <strong>I</strong> eyedropper
     <br>
-    • <strong>Items:</strong> Draw a flat icon with a clear silhouette. The starter template gives you the right shape — customise colors and details on top.
+    • <strong>Entities:</strong> Yellow outlines show UV regions (head, body, limbs). Paint each region to color that part in-game.
     <br>
-    • <strong>Blocks:</strong> The same texture tiles all 6 faces. Aim for a <em>seamless tile</em> — keep the brightest highlights near the center.
-    <br>
-    • <strong>Entities:</strong> Yellow outlines show the UV regions for each body part (head, body, limbs). Paint each region to color that part of the 3D model.
-    <br>
-    • <strong>Colors:</strong> Stick to ~4–8 colors per texture. Dithering (alternating pixels) is great for gradients.
-    <br>
-    • Hit <strong>Save Texture</strong> to store it. It will be embedded as a real PNG in your exported <code>.mcaddon</code>.
+    • <strong>Blocks:</strong> Same texture tiles all 6 faces — keep it seamless. <strong>Items:</strong> Clear silhouette at 16px.
   </div>
 
   <div class="modal-footer" style="margin-top:14px">
@@ -186,6 +266,7 @@ function _buildPainterModal() {
 
   const canvas = document.getElementById('tp-canvas');
   _setupCanvasEvents(canvas);
+  _updateUndoButtons();
   tpRedraw();
 }
 
@@ -211,17 +292,26 @@ function _setupCanvasEvents(canvas) {
     } else if (painterState.tool === 'fill') {
       _floodFill(x, y);
       painterState.painting = false;
+    } else if (painterState.tool === 'eyedropper') {
+      const c = painterState.pixels[idx];
+      if (c) { tpSetColor(c); tpSetTool('pencil'); }
+      return;
     }
     tpRedraw();
   }
 
-  canvas.addEventListener('mousedown', e => { painterState.painting = true; applyTool(e); });
+  canvas.addEventListener('mousedown', e => {
+    tpPushHistory();
+    painterState.painting = true;
+    applyTool(e);
+  });
   canvas.addEventListener('mousemove', e => { if (painterState.painting) applyTool(e); });
   canvas.addEventListener('mouseup',   () => { painterState.painting = false; });
   canvas.addEventListener('mouseleave',() => { painterState.painting = false; });
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
+    tpPushHistory();
     painterState.painting = true;
     applyTool(e.touches[0]);
   }, { passive: false });
@@ -230,6 +320,14 @@ function _setupCanvasEvents(canvas) {
     if (painterState.painting) applyTool(e.touches[0]);
   }, { passive: false });
   canvas.addEventListener('touchend', () => { painterState.painting = false; });
+
+  // Tool keyboard shortcuts when canvas is focused (also handled globally via _handlePainterKeydown)
+  canvas.addEventListener('keydown', e => {
+    if (e.key === 'p' || e.key === 'P') tpSetTool('pencil');
+    if (e.key === 'e' || e.key === 'E') tpSetTool('eraser');
+    if (e.key === 'f' || e.key === 'F') tpSetTool('fill');
+    if (e.key === 'i' || e.key === 'I') tpSetTool('eyedropper');
+  });
 }
 
 // ── Redraw ─────────────────────────────────────────────────────────────────
@@ -313,10 +411,13 @@ function _updatePreviews() {
 
 function tpSetTool(tool) {
   painterState.tool = tool;
-  for (const t of ['pencil', 'eraser', 'fill']) {
+  for (const t of ['pencil', 'eraser', 'fill', 'eyedropper']) {
     const btn = document.getElementById(`tp-tool-${t}`);
     if (btn) btn.className = `btn btn-sm ${t === tool ? 'btn-primary' : 'btn-secondary'}`;
   }
+  // Update cursor
+  const canvas = document.getElementById('tp-canvas');
+  if (canvas) canvas.style.cursor = tool === 'eyedropper' ? 'crosshair' : 'crosshair';
 }
 
 function tpSetColor(color) {
@@ -341,11 +442,13 @@ function tpSetColor(color) {
 }
 
 function tpClear() {
+  tpPushHistory();
   painterState.pixels = new Array(256).fill(null);
   tpRedraw();
 }
 
 function tpFillFromBaseColor() {
+  tpPushHistory();
   const t = painterState.targetType;
   const obj = t === 'item' ? getItem(painterState.targetId)
             : t === 'entity' ? getEntity(painterState.targetId)
@@ -354,6 +457,66 @@ function tpFillFromBaseColor() {
   const shape = (obj && obj.itemShape) ? obj.itemShape : 'flat';
   _fillPixelsFromBaseColor(color, t, shape);
   tpRedraw();
+}
+
+// ── PNG Import ─────────────────────────────────────────────────────────────
+
+function tpImportPng() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp,image/*';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      loadPixelsFromDataUrl(ev.target.result).then(pixels => {
+        tpPushHistory();
+        painterState.pixels = pixels;
+        tpRedraw();
+        showToast('✓ Image imported! It was scaled to 16×16.', 'success');
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+// ── Piskel integration ─────────────────────────────────────────────────────
+
+function tpDownloadTexture() {
+  const hasPixels = painterState.pixels.some(p => p !== null);
+  if (!hasPixels) {
+    showToast('Canvas is empty — nothing to download.', 'error');
+    return;
+  }
+  const dataUrl = _pixelsToDataUrl();
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = 'texture_16x16.png';
+  a.click();
+  showToast('PNG downloaded.', 'success');
+}
+
+function tpOpenInPiskel() {
+  // Download the current texture so the user can import it into Piskel
+  const hasPixels = painterState.pixels.some(p => p !== null);
+  if (hasPixels) {
+    const dataUrl = _pixelsToDataUrl();
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'texture_16x16.png';
+    a.click();
+  }
+
+  window.open('https://www.piskelapp.com/p/create/sprite', '_blank');
+
+  showToast(
+    hasPixels
+      ? 'PNG downloaded! In Piskel: File → Import → Import from file. When done: Export → PNG → use Import PNG here.'
+      : 'Piskel opened! When done: Export → PNG → use Import PNG here.',
+    'info'
+  );
 }
 
 // ── Item shape templates ────────────────────────────────────────────────────
