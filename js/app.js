@@ -714,7 +714,10 @@ function newEntity() {
     collisionWidth: 0.6,
     collisionHeight: 1.8,
     dropsXP: 0,
-    knockbackResist: 0
+    knockbackResist: 0,
+    color: '#888888',
+    color2: '#444444',
+    textureDataUrl: null
   };
   state.entities.push(entity);
   state.ui.editingEntity = entity.id;
@@ -753,8 +756,10 @@ function renderEntities(container) {
     ${state.entities.map(ent => `
     <div class="element-card ${state.ui.editingEntity === ent.id ? 'active' : ''}"
          onclick="state.ui.editingEntity='${ent.id}';renderEntities(document.getElementById('main-content'));updateJsonPreview()">
-      <div class="element-icon">
-        ${ent.isHostile ? '👹' : ent.isTameable ? '🐕' : '🐄'}
+      <div class="element-icon" style="background:${escapeHtml(ent.color || '#888888')}20;border-color:${escapeHtml(ent.color || '#888888')}60;overflow:hidden;padding:0">
+        ${ent.textureDataUrl
+          ? `<img src="${ent.textureDataUrl}" width="100%" height="100%" style="image-rendering:pixelated;display:block">`
+          : (ent.isHostile ? '👹' : ent.isTameable ? '🐕' : '🐄')}
       </div>
       <div class="element-info">
         <div class="element-name">${escapeHtml(ent.displayName)}</div>
@@ -888,6 +893,38 @@ function renderEntityEditor(entity) {
       <label class="toggle"><input type="checkbox" ${entity.swimsInWater?'checked':''}
         onchange="getEntity('${entity.id}').swimsInWater=this.checked;updateJsonPreview()">
         <span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">Texture</div>
+    <div class="form-group full">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${entity.textureDataUrl
+          ? `<img src="${entity.textureDataUrl}" width="32" height="32"
+               style="image-rendering:pixelated;border:1px solid var(--border);border-radius:4px"
+               title="Custom texture">`
+          : `<div style="width:32px;height:32px;background:${entity.color||'#888888'};
+               border:1px solid var(--border);border-radius:4px;flex-shrink:0" title="Base color preview"></div>`}
+        <button class="btn btn-sm btn-secondary" onclick="openTexturePainter('${entity.id}','entity')">
+          🎨 ${entity.textureDataUrl ? 'Edit Texture' : 'Paint Texture'}
+        </button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="color" value="${entity.color || '#888888'}"
+            oninput="getEntity('${entity.id}').color=this.value;renderEntities(document.getElementById('main-content'))"
+            title="Base skin color (used for placeholder if no custom texture)">
+          <span style="font-size:11px;color:var(--text-muted)">Base color</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="color" value="${entity.color2 || '#444444'}"
+            oninput="getEntity('${entity.id}').color2=this.value"
+            title="Spawn egg overlay color">
+          <span style="font-size:11px;color:var(--text-muted)">Spawn egg spots</span>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:6px">
+        Paint a 16×16 pixel-art texture. Entities use the humanoid skin UV layout — the texture wraps around the body geometry.
+      </div>
     </div>
   </div>
 </div>`;

@@ -36,7 +36,7 @@ function openTexturePainter(targetId, targetType) {
   painterState.targetType = targetType;
   painterState.tool = 'pencil';
 
-  const obj = targetType === 'item' ? getItem(targetId) : getBlock(targetId);
+  const obj = targetType === 'item' ? getItem(targetId) : targetType === 'entity' ? getEntity(targetId) : getBlock(targetId);
   const existing = obj ? obj.textureDataUrl : null;
 
   if (existing) {
@@ -329,11 +329,12 @@ function tpClear() {
 }
 
 function tpFillFromBaseColor() {
-  const obj = painterState.targetType === 'item'
-    ? getItem(painterState.targetId)
-    : getBlock(painterState.targetId);
+  const t = painterState.targetType;
+  const obj = t === 'item' ? getItem(painterState.targetId)
+            : t === 'entity' ? getEntity(painterState.targetId)
+            : getBlock(painterState.targetId);
   const color = (obj && obj.color) ? obj.color : '#888888';
-  _fillPixelsFromBaseColor(color, painterState.targetType);
+  _fillPixelsFromBaseColor(color, t);
   tpRedraw();
 }
 
@@ -346,6 +347,9 @@ function _fillPixelsFromBaseColor(color, type) {
         // Blocky quad-shading (mimic export.js placeholder)
         const dark = (x < 8 && y < 8) || (x >= 8 && y >= 8);
         pixels[idx] = dark ? _shadeHex(color, -45) : _shadeHex(color, 30);
+      } else if (type === 'entity') {
+        // Solid skin base with subtle top-highlight
+        pixels[idx] = y <= 1 ? _shadeHex(color, 40) : y >= 14 ? _shadeHex(color, -40) : color;
       } else {
         // Item: flat with highlighted top-left edge, dark bottom-right
         if (x === 0 || y === 0 || x === 15 || y === 15) {
@@ -386,16 +390,18 @@ function _floodFill(startX, startY) {
 
 function tpSave() {
   const dataUrl = _pixelsToDataUrl();
-  const obj = painterState.targetType === 'item'
-    ? getItem(painterState.targetId)
-    : getBlock(painterState.targetId);
+  const t = painterState.targetType;
+  const obj = t === 'item' ? getItem(painterState.targetId)
+            : t === 'entity' ? getEntity(painterState.targetId)
+            : getBlock(painterState.targetId);
   if (obj) {
     obj.textureDataUrl = dataUrl;
     showToast('✓ Texture saved!', 'success');
   }
   closeTexturePainter();
   const mc = document.getElementById('main-content');
-  if (painterState.targetType === 'item') renderItems(mc);
+  if (t === 'item') renderItems(mc);
+  else if (t === 'entity') renderEntities(mc);
   else renderBlocks(mc);
 }
 
