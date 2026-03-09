@@ -44,51 +44,57 @@ async function makeItemTexturePng(hexColor) {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
-// Generate a simple 64x64 entity skin texture (humanoid layout placeholder)
-async function makeEntityTexturePng(hexColor) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-
-  // Transparent base so unused UV areas are empty
-  ctx.clearRect(0, 0, 64, 64);
-
-  const base = hexColor || '#888888';
-  const dark = 'rgba(0,0,0,0.25)';
+// Paint UV islands for a given body type onto a canvas context
+function _paintUVIslands(ctx, base, bodyType) {
+  const dark  = 'rgba(0,0,0,0.25)';
   const light = 'rgba(255,255,255,0.18)';
-
-  // Fill all standard humanoid UV islands with the base color
-  // Head outer (8x8 face + sides)
   ctx.fillStyle = base;
-  ctx.fillRect(0, 0, 32, 16);
-  // Body
-  ctx.fillRect(16, 16, 24, 16);
-  // Right arm
-  ctx.fillRect(40, 16, 16, 16);
-  // Right leg
-  ctx.fillRect(0, 16, 16, 16);
-  // Left arm (mirrored in 1.8+ layout)
-  ctx.fillRect(32, 48, 16, 16);
-  // Left leg
-  ctx.fillRect(16, 48, 16, 16);
 
-  // Simple shading: darken bottom half of each region
-  ctx.fillStyle = dark;
-  ctx.fillRect(0, 8, 32, 8);
-  ctx.fillRect(16, 24, 24, 8);
-  ctx.fillRect(40, 24, 16, 8);
-  ctx.fillRect(0, 24, 16, 8);
-  ctx.fillRect(32, 56, 16, 8);
-  ctx.fillRect(16, 56, 16, 8);
+  if (bodyType === 'quadruped' || bodyType === 'bird') {
+    // 64x32 layout: head, body, 4 legs
+    ctx.fillRect(0, 0, 64, 32);
+    ctx.fillStyle = dark;
+    ctx.fillRect(0, 16, 64, 16);
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, 64, 4);
+  } else if (bodyType === 'slime') {
+    // 64x32 cube layout
+    ctx.fillRect(0, 0, 64, 32);
+    ctx.fillStyle = dark;
+    ctx.fillRect(0, 16, 64, 16);
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, 64, 4);
+  } else {
+    // humanoid / undead / bat → 64x64 Steve UV layout
+    ctx.fillRect(0,  0, 32, 16);  // head
+    ctx.fillRect(16, 16, 24, 16); // body
+    ctx.fillRect(40, 16, 16, 16); // right arm
+    ctx.fillRect(0,  16, 16, 16); // right leg
+    ctx.fillRect(32, 48, 16, 16); // left arm
+    ctx.fillRect(16, 48, 16, 16); // left leg
+    ctx.fillStyle = dark;
+    ctx.fillRect(0, 8, 32, 8);
+    ctx.fillRect(16, 24, 24, 8);
+    ctx.fillRect(40, 24, 16, 8);
+    ctx.fillRect(0,  24, 16, 8);
+    ctx.fillRect(32, 56, 16, 8);
+    ctx.fillRect(16, 56, 16, 8);
+    ctx.fillStyle = light;
+    ctx.fillRect(0,  0,  32, 2);
+    ctx.fillRect(16, 16, 24, 2);
+    ctx.fillRect(40, 16, 16, 2);
+    ctx.fillRect(0,  16, 16, 2);
+  }
+}
 
-  // Light highlight: top strip of each region
-  ctx.fillStyle = light;
-  ctx.fillRect(0, 0, 32, 2);
-  ctx.fillRect(16, 16, 24, 2);
-  ctx.fillRect(40, 16, 16, 2);
-  ctx.fillRect(0, 16, 16, 2);
-
+async function makeEntityTexturePng(hexColor, bodyType) {
+  const is32h = bodyType === 'quadruped' || bodyType === 'bird' || bodyType === 'slime';
+  const canvas = document.createElement('canvas');
+  canvas.width  = 64;
+  canvas.height = is32h ? 32 : 64;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  _paintUVIslands(ctx, hexColor || '#888888', bodyType || 'humanoid');
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
@@ -178,7 +184,7 @@ async function exportAddon(state) {
 
       const blob = entity.textureDataUrl
         ? await dataUrlToBlob(entity.textureDataUrl)
-        : await makeEntityTexturePng(entity.color || '#888888');
+        : await makeEntityTexturePng(entity.color || '#888888', entity.bodyType || 'humanoid');
       entTexDir.file(`${texName}.png`, blob);
     }
   }

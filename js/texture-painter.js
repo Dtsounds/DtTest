@@ -46,8 +46,7 @@ function openTexturePainter(targetId, targetType) {
     });
   } else {
     painterState.pixels = new Array(256).fill(null);
-    // Pre-fill from base color
-    if (obj) _fillPixelsFromBaseColor(obj.color || '#888888', targetType);
+    if (obj) _fillPixelsFromBaseColor(obj.color || '#888888', targetType, obj.itemShape || 'flat');
     _buildPainterModal();
   }
 }
@@ -166,9 +165,11 @@ function _buildPainterModal() {
     <strong>Texture Guidelines:</strong>
     Minecraft textures are <strong>16×16 pixels</strong> — keep your art simple and readable at small sizes.
     <br>
-    • <strong>Items:</strong> Draw a flat icon with a clear silhouette. Use transparent edges (Erase tool) to define the shape. Strong colors and high contrast read best.
+    • <strong>Items:</strong> Draw a flat icon with a clear silhouette. The starter template gives you the right shape — customise colors and details on top.
     <br>
-    • <strong>Blocks:</strong> The same texture tiles all 6 faces. Aim for a <em>seamless tile</em> — keep the brightest highlights near the center. A 2-tone checkerboard shading gives a classic block feel.
+    • <strong>Blocks:</strong> The same texture tiles all 6 faces. Aim for a <em>seamless tile</em> — keep the brightest highlights near the center.
+    <br>
+    • <strong>Entities:</strong> Yellow outlines show the UV regions for each body part (head, body, limbs). Paint each region to color that part of the 3D model.
     <br>
     • <strong>Colors:</strong> Stick to ~4–8 colors per texture. Dithering (alternating pixels) is great for gradients.
     <br>
@@ -267,6 +268,22 @@ function tpRedraw() {
     ctx.beginPath(); ctx.moveTo(0, i * ph); ctx.lineTo(W, i * ph); ctx.stroke();
   }
 
+  // Entity UV guide overlay
+  if (painterState.targetType === 'entity') {
+    const entity = getEntity(painterState.targetId);
+    const guides = ENTITY_UV_GUIDES[(entity && entity.bodyType) || 'humanoid'] || [];
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,100,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.font = `bold ${Math.floor(pw * 0.7)}px monospace`;
+    ctx.fillStyle = 'rgba(255,255,100,0.9)';
+    for (const g of guides) {
+      ctx.strokeRect(g.x * pw, g.y * ph, g.w * pw, g.h * ph);
+      ctx.fillText(g.label, g.x * pw + 2, g.y * ph + Math.floor(pw * 0.8));
+    }
+    ctx.restore();
+  }
+
   _updatePreviews();
 }
 
@@ -334,34 +351,323 @@ function tpFillFromBaseColor() {
             : t === 'entity' ? getEntity(painterState.targetId)
             : getBlock(painterState.targetId);
   const color = (obj && obj.color) ? obj.color : '#888888';
-  _fillPixelsFromBaseColor(color, t);
+  const shape = (obj && obj.itemShape) ? obj.itemShape : 'flat';
+  _fillPixelsFromBaseColor(color, t, shape);
   tpRedraw();
 }
 
-function _fillPixelsFromBaseColor(color, type) {
+// ── Item shape templates ────────────────────────────────────────────────────
+// Each template is 16 rows of 16 chars: 0=transparent 1=base 2=light 3=dark 4=darker
+const ITEM_TEMPLATES = {
+  flat: [
+    '0111111111111110',
+    '1222222222222221',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1211111111111121',
+    '1333333333333331',
+    '0133333333333310',
+  ],
+  sword: [
+    '0000000000000021',
+    '0000000000000120',
+    '0000000000001200',
+    '0000000000012000',
+    '0000000000120000',
+    '0000000001200000',
+    '0000000012000000',
+    '0000034412000000',
+    '0000001200000000',
+    '0000012000000000',
+    '0000120000000000',
+    '0001200000000000',
+    '0012000000000000',
+    '0034000000000000',
+    '0300000000000000',
+    '0000000000000000',
+  ],
+  dagger: [
+    '0000000000002100',
+    '0000000000012000',
+    '0000000000120000',
+    '0000000001200000',
+    '0000000012000000',
+    '0000000120000000',
+    '0000001200000000',
+    '0000012000000000',
+    '0000120000000000',
+    '0003400000000000',
+    '0030000000000000',
+    '0300000000000000',
+    '3000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+  pickaxe: [
+    '0000000000000000',
+    '0000001244310000',
+    '0000012433100000',
+    '0000124331000000',
+    '0001243312000000',
+    '0002433120000000',
+    '0024331200440000',
+    '0043312004400000',
+    '0001200044000000',
+    '0000120440000000',
+    '0000014400000000',
+    '0000044000000000',
+    '0000440000000000',
+    '0004400000000000',
+    '0044000000000000',
+    '0000000000000000',
+  ],
+  axe: [
+    '0000000000000000',
+    '0000000002110000',
+    '0000000021220000',
+    '0000000212220000',
+    '0000002122110000',
+    '0000021221100000',
+    '0000212211000000',
+    '0002122200000000',
+    '0021222000000000',
+    '0001100000000000',
+    '0011000000000000',
+    '0110000000000000',
+    '1100000000000000',
+    '3400000000000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+  shovel: [
+    '0000000021200000',
+    '0000000213200000',
+    '0000002132000000',
+    '0000002132000000',
+    '0000002132000000',
+    '0000002132000000',
+    '0000002132000000',
+    '0000001210000000',
+    '0000000120000000',
+    '0000000120000000',
+    '0000000120000000',
+    '0000000120000000',
+    '0000000340000000',
+    '0000000340000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+  bow: [
+    '0000000000001100',
+    '0000000000112000',
+    '0000000001100000',
+    '0001100011000000',
+    '0001100110000000',
+    '0000001100000000',
+    '0000011000000000',
+    '0000110000000000',
+    '0001100000000000',
+    '0001100000000000',
+    '0001100000110000',
+    '0000110001100000',
+    '0000011011000000',
+    '0000001110000000',
+    '0000000100000000',
+    '0000000000000000',
+  ],
+  arrow: [
+    '0000000000000021',
+    '0000000000000213',
+    '0000000000002130',
+    '0000000000021300',
+    '0000000000213000',
+    '0000000002130000',
+    '0000000021300000',
+    '0000000213000000',
+    '0000002130000000',
+    '0000021300000000',
+    '0000213000000000',
+    '0002130000000000',
+    '0013000000000000',
+    '0320000000000000',
+    '3200000000000000',
+    '0000000000000000',
+  ],
+  potion: [
+    '0000001100000000',
+    '0000011100000000',
+    '0000034400000000',
+    '0000344400000000',
+    '0002222220000000',
+    '0022222222000000',
+    '0222222222200000',
+    '0221212121200000',
+    '0222222222200000',
+    '0222222222200000',
+    '0222222222200000',
+    '0222121212200000',
+    '0222222222200000',
+    '0022222222000000',
+    '0002222220000000',
+    '0000000000000000',
+  ],
+  food: [
+    '0000022200000000',
+    '0000213220000000',
+    '0002132222200000',
+    '0021322222320000',
+    '0013222222230000',
+    '0132222222223000',
+    '0132222222223000',
+    '0132222222223000',
+    '0132222222223000',
+    '0132222222223000',
+    '0013222222230000',
+    '0001322222300000',
+    '0000132223000000',
+    '0000013230000000',
+    '0000001300000000',
+    '0000000000000000',
+  ],
+  gem: [
+    '0000012221000000',
+    '0000123432100000',
+    '0001234443210000',
+    '0012344444321000',
+    '0123444444432100',
+    '0134444444443100',
+    '0034444444443000',
+    '0013444444430000',
+    '0001344444300000',
+    '0000134444300000',
+    '0000013443000000',
+    '0000001430000000',
+    '0000000300000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+  shield: [
+    '0012222222210000',
+    '0122222222221000',
+    '0122222222221000',
+    '0122222222221000',
+    '0122222222221000',
+    '0122232232221000',
+    '0122322232221000',
+    '0122232232221000',
+    '0012222222210000',
+    '0001222222100000',
+    '0000122221000000',
+    '0000012210000000',
+    '0000001100000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+  staff: [
+    '0000002222000000',
+    '0000022322200000',
+    '0000223222200000',
+    '0000222232000000',
+    '0000022200000000',
+    '0000002100000000',
+    '0000021000000000',
+    '0000210000000000',
+    '0002100000000000',
+    '0021000000000000',
+    '0210000000000000',
+    '2100000000000000',
+    '3400000000000000',
+    '4300000000000000',
+    '0000000000000000',
+    '0000000000000000',
+  ],
+};
+
+// ── Entity UV region guides (scaled to 16×16 painter) ──────────────────────
+// Draws faint labeled outlines to show where each body-part UV maps
+const ENTITY_UV_GUIDES = {
+  humanoid: [
+    { label:'Head',  x:2, y:0, w:5, h:4 },
+    { label:'Body',  x:3, y:5, w:5, h:5 },
+    { label:'R.Arm', x:9, y:5, w:3, h:5 },
+    { label:'R.Leg', x:0, y:5, w:3, h:5 },
+    { label:'L.Arm', x:7, y:12,w:3, h:4 },
+    { label:'L.Leg', x:3, y:12,w:3, h:4 },
+  ],
+  undead: [
+    { label:'Head',  x:2, y:0, w:5, h:4 },
+    { label:'Body',  x:3, y:5, w:5, h:5 },
+    { label:'R.Arm', x:9, y:5, w:3, h:5 },
+    { label:'R.Leg', x:0, y:5, w:3, h:5 },
+    { label:'L.Arm', x:7, y:12,w:3, h:4 },
+    { label:'L.Leg', x:3, y:12,w:3, h:4 },
+  ],
+  quadruped: [
+    { label:'Head',  x:0, y:0, w:6, h:3 },
+    { label:'Body',  x:6, y:3, w:8, h:5 },
+    { label:'Leg 1', x:0, y:5, w:2, h:6 },
+    { label:'Leg 2', x:2, y:5, w:2, h:6 },
+    { label:'Leg 3', x:4, y:5, w:2, h:6 },
+    { label:'Leg 4', x:6, y:5, w:2, h:6 },
+  ],
+  bird: [
+    { label:'Head',  x:0, y:0, w:5, h:3 },
+    { label:'Body',  x:5, y:2, w:7, h:6 },
+    { label:'Wing L',x:1, y:5, w:3, h:6 },
+    { label:'Wing R',x:1, y:11,w:3, h:5 },
+    { label:'Leg',   x:5, y:9, w:2, h:5 },
+    { label:'Beak',  x:12,y:0, w:3, h:3 },
+  ],
+  slime: [
+    { label:'Outer', x:0, y:0, w:8, h:8 },
+    { label:'Inner', x:8, y:0, w:8, h:8 },
+  ],
+  bat: [
+    { label:'Body',  x:0, y:0, w:6, h:5 },
+    { label:'Head',  x:6, y:0, w:5, h:4 },
+    { label:'Wing',  x:0, y:6, w:16,h:6 },
+  ],
+};
+
+function _fillPixelsFromBaseColor(color, type, shape) {
   const pixels = painterState.pixels;
+
+  if (type === 'block') {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        const dark = (x < 8 && y < 8) || (x >= 8 && y >= 8);
+        pixels[y * 16 + x] = dark ? _shadeHex(color, -45) : _shadeHex(color, 30);
+      }
+    }
+    return;
+  }
+
+  if (type === 'entity') {
+    for (let i = 0; i < 256; i++) pixels[i] = color;
+    return;
+  }
+
+  // Item — use shape template
+  const tpl = ITEM_TEMPLATES[shape] || ITEM_TEMPLATES.flat;
+  const L = _shadeHex(color, 70);
+  const D = _shadeHex(color, -55);
+  const DK = _shadeHex(color, -90);
+  const map = { '0': null, '1': color, '2': L, '3': D, '4': DK };
   for (let y = 0; y < 16; y++) {
     for (let x = 0; x < 16; x++) {
-      const idx = y * 16 + x;
-      if (type === 'block') {
-        // Blocky quad-shading (mimic export.js placeholder)
-        const dark = (x < 8 && y < 8) || (x >= 8 && y >= 8);
-        pixels[idx] = dark ? _shadeHex(color, -45) : _shadeHex(color, 30);
-      } else if (type === 'entity') {
-        // Solid skin base with subtle top-highlight
-        pixels[idx] = y <= 1 ? _shadeHex(color, 40) : y >= 14 ? _shadeHex(color, -40) : color;
-      } else {
-        // Item: flat with highlighted top-left edge, dark bottom-right
-        if (x === 0 || y === 0 || x === 15 || y === 15) {
-          pixels[idx] = null;
-        } else if (x <= 1 || y <= 1) {
-          pixels[idx] = _shadeHex(color, 70);
-        } else if (x >= 14 || y >= 14) {
-          pixels[idx] = _shadeHex(color, -70);
-        } else {
-          pixels[idx] = color;
-        }
-      }
+      pixels[y * 16 + x] = map[tpl[y][x]] ?? null;
     }
   }
 }

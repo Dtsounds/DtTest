@@ -262,7 +262,8 @@ function newItem() {
     isGlint: false,
     isThrowable: false,
     handEquipped: false,
-    color: '#a07850'
+    color: '#a07850',
+    itemShape: 'flat'
   };
   state.items.push(item);
   state.ui.editingItem = item.id;
@@ -379,9 +380,32 @@ function renderItemEditor(item) {
             <span style="font-size:11px;color:var(--text-muted)">Base color</span>
           </div>
         </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text-muted)">Starter template:</span>
+          <select style="font-size:12px"
+            onchange="getItem('${item.id}').itemShape=this.value">
+            ${[
+              ['flat',    '⬜ Flat square'],
+              ['sword',   '🗡 Sword'],
+              ['dagger',  '🔪 Dagger / Knife'],
+              ['pickaxe', '⛏ Pickaxe'],
+              ['axe',     '🪓 Axe'],
+              ['shovel',  '🕳 Shovel'],
+              ['bow',     '🏹 Bow'],
+              ['arrow',   '↗ Arrow'],
+              ['potion',  '🧪 Potion bottle'],
+              ['food',    '🍎 Food / round'],
+              ['gem',     '💎 Gem / diamond'],
+              ['shield',  '🛡 Shield'],
+              ['staff',   '🪄 Staff / wand'],
+            ].map(([v,l]) => `<option value="${v}" ${(item.itemShape||'flat')===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="getItem('${item.id}').itemShape=this.previousElementSibling.value;openTexturePainter('${item.id}','item')">
+            Apply &amp; Open Painter
+          </button>
+        </div>
         <div class="hint" style="margin-top:6px">
-          Paint a custom 16×16 pixel-art texture, or use the base color as a quick placeholder.
-          Items should have a clear silhouette — transparent edges define the icon shape.
+          Choose a starter template shape, then open the painter to customise every pixel.
         </div>
       </div>
     </div>
@@ -717,7 +741,8 @@ function newEntity() {
     knockbackResist: 0,
     color: '#888888',
     color2: '#444444',
-    textureDataUrl: null
+    textureDataUrl: null,
+    bodyType: 'humanoid'
   };
   state.entities.push(entity);
   state.ui.editingEntity = entity.id;
@@ -797,6 +822,20 @@ function renderEntityEditor(entity) {
         <label>Identifier</label>
         <input type="text" value="${escapeHtml(entity.identifier)}"
           oninput="getEntity('${entity.id}').identifier=this.value;updateJsonPreview()">
+      </div>
+      <div class="form-group">
+        <label>Body Type</label>
+        <select onchange="getEntity('${entity.id}').bodyType=this.value;updateJsonPreview()">
+          ${[
+            ['humanoid','👤 Humanoid (Steve/zombie shape)'],
+            ['undead',  '💀 Undead (zombie geometry)'],
+            ['quadruped','🐄 Quadruped (pig/cow/horse)'],
+            ['bird',    '🐦 Bird (chicken shape)'],
+            ['slime',   '🟩 Slime / Cube'],
+            ['bat',     '🦇 Bat (small flying)'],
+          ].map(([v,l]) => `<option value="${v}" ${entity.bodyType===v?'selected':''}>${l}</option>`).join('')}
+        </select>
+        <div class="hint">Controls the 3D skeleton used to render the entity in-game.</div>
       </div>
     </div>
   </div>
@@ -923,7 +962,7 @@ function renderEntityEditor(entity) {
         </div>
       </div>
       <div class="hint" style="margin-top:6px">
-        Paint a 16×16 pixel-art texture. Entities use the humanoid skin UV layout — the texture wraps around the body geometry.
+        Paint a 16×16 pixel-art texture. The painter shows a faint UV guide matching your chosen body type so you know which pixels map to which body part.
       </div>
     </div>
   </div>

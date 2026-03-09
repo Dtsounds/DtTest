@@ -264,25 +264,31 @@ function generateEntityBP(entity, namespace) {
 
 // ── ENTITY RESOURCE PACK ───────────────────────────────────────────────────
 
+const ENTITY_BODY_GEOMETRIES = {
+  humanoid:  'geometry.humanoid.custom',
+  undead:    'geometry.zombie',
+  quadruped: 'geometry.pig',
+  bird:      'geometry.chicken',
+  slime:     'geometry.slime',
+  bat:       'geometry.bat',
+};
+
 function generateEntityClientEntity(entity, namespace) {
   const id = resolveId(entity.identifier, namespace);
   const texName = id.replace(':', '_');
+  const geometry = ENTITY_BODY_GEOMETRIES[entity.bodyType] || 'geometry.humanoid.custom';
 
   const description = {
     identifier: id,
     materials: { default: 'entity_alphatest' },
     textures: { default: `textures/entity/${texName}` },
-    geometry: { default: 'geometry.humanoid.custom' },
+    geometry: { default: geometry },
     render_controllers: ['controller.render.default'],
     spawn_egg: {
       base_color: entity.color || '#888888',
       overlay_color: entity.color2 || '#444444'
     }
   };
-
-  if (entity.isSpawnable !== false) {
-    description.enable_attachables = false;
-  }
 
   return {
     format_version: '1.10.0',
