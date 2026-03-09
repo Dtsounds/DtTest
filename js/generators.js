@@ -59,8 +59,11 @@ function generateItemBP(item, namespace) {
     Equipment: 'equipment', Construction: 'construction', Command: 'none'
   };
 
+  const texName = id.replace(':', '_');
+
   const components = {
-    'minecraft:max_stack_size': Math.min(64, Math.max(1, parseInt(item.maxStackSize) || 64))
+    'minecraft:max_stack_size': Math.min(64, Math.max(1, parseInt(item.maxStackSize) || 64)),
+    'minecraft:icon': { texture: texName }
   };
 
   if (item.isWeapon) {
