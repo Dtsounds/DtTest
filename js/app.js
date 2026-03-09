@@ -800,6 +800,7 @@ function renderEntities(container) {
   ${editing ? renderEntityEditor(editing) : ''}
 </div>`;
   updateJsonPreview();
+  if (editing) updateEntityPreview(editing);
 }
 
 function renderEntityEditor(entity) {
@@ -808,6 +809,18 @@ function renderEntityEditor(entity) {
   <div class="editor-panel-header">
     <span class="editor-panel-title">✏ Editing: ${escapeHtml(entity.displayName)}</span>
     <button class="btn btn-secondary btn-sm" onclick="state.ui.editingEntity=null;renderEntities(document.getElementById('main-content'))">Done</button>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">Live Preview</div>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <canvas id="entity-preview-${entity.id}" width="160" height="200"
+        style="border:1px solid var(--border);border-radius:6px;background:#111;image-rendering:pixelated"></canvas>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.8;max-width:200px;padding-top:4px">
+        Shows a simplified front-view of your entity using the base color and body type.<br><br>
+        Paint a texture to see body-part colors reflected here. The preview updates when you save a texture or change the base color.
+      </div>
+    </div>
   </div>
 
   <div class="form-section">
@@ -950,7 +963,7 @@ function renderEntityEditor(entity) {
         </button>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="color" value="${entity.color || '#888888'}"
-            oninput="getEntity('${entity.id}').color=this.value;renderEntities(document.getElementById('main-content'))"
+            oninput="getEntity('${entity.id}').color=this.value;renderEntities(document.getElementById('main-content'));updateEntityPreview(getEntity('${entity.id}'))"
             title="Base skin color (used for placeholder if no custom texture)">
           <span style="font-size:11px;color:var(--text-muted)">Base color</span>
         </div>
@@ -967,6 +980,139 @@ function renderEntityEditor(entity) {
     </div>
   </div>
 </div>`;
+}
+
+// ── ENTITY PREVIEW ─────────────────────────────────────────────────────────
+
+function updateEntityPreview(entity) {
+  if (!entity) return;
+  const canvas = document.getElementById(`entity-preview-${entity.id}`);
+  if (!canvas) return;
+
+  const bodyType = entity.bodyType || 'humanoid';
+
+  if (entity.textureDataUrl) {
+    // Sample center pixel of each UV region from the 16×16 painted texture
+    const img = new Image();
+    img.onload = () => {
+      const tmp = document.createElement('canvas');
+      tmp.width = 16; tmp.height = 16;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(img, 0, 0, 16, 16);
+      const d = tctx.getImageData(0, 0, 16, 16).data;
+      const guides = ENTITY_UV_GUIDES[bodyType] || ENTITY_UV_GUIDES.humanoid;
+      const colors = guides.map(g => {
+        const cx = Math.min(15, Math.floor(g.x + g.w / 2));
+        const cy = Math.min(15, Math.floor(g.y + g.h / 2));
+        const i = (cy * 16 + cx) * 4;
+        return d[i + 3] < 10
+          ? (entity.color || '#888888')
+          : `#${d[i].toString(16).padStart(2,'0')}${d[i+1].toString(16).padStart(2,'0')}${d[i+2].toString(16).padStart(2,'0')}`;
+      });
+      _drawEntityShape(canvas, bodyType, colors);
+    };
+    img.src = entity.textureDataUrl;
+  } else {
+    const base = entity.color || '#888888';
+    _drawEntityShape(canvas, bodyType, [
+      _shadeHex(base, 40),   // head  - lighter
+      base,                   // body
+      _shadeHex(base, -20),  // r.arm
+      _shadeHex(base, -20),  // r.leg / l.arm
+      _shadeHex(base, -35),  // l.arm / l.leg
+      _shadeHex(base, -35),  // l.leg
+    ]);
+  }
+}
+
+function _drawEntityShape(canvas, bodyType, colors) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(0, 0, W, H);
+
+  const c = i => colors[i % colors.length] || colors[0] || '#888888';
+
+  function block(x, y, w, h, col) {
+    ctx.fillStyle = col;
+    ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w) - 1, Math.round(h) - 1);
+    // top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(Math.round(x) + 1, Math.round(y) + 1, Math.round(w) - 2, 2);
+  }
+
+  const s = Math.min(W, H) / 110;
+  const cx = W / 2;
+
+  if (bodyType === 'humanoid' || bodyType === 'undead') {
+    block(cx-16*s, 6*s,   32*s, 32*s, c(0)); // head
+    block(cx-12*s, 38*s,  24*s, 28*s, c(1)); // body
+    block(cx-28*s, 38*s,  12*s, 24*s, c(2)); // L arm
+    block(cx+16*s, 38*s,  12*s, 24*s, c(3)); // R arm
+    block(cx-13*s, 66*s,  12*s, 28*s, c(4)); // L leg
+    block(cx+ 1*s, 66*s,  12*s, 28*s, c(5)); // R leg
+
+  } else if (bodyType === 'quadruped') {
+    block(cx+24*s, 18*s,  28*s, 26*s, c(0)); // head
+    // snout
+    ctx.fillStyle = _shadeHex(c(0), -20);
+    ctx.fillRect(Math.round(cx+38*s), Math.round(32*s), Math.round(16*s), Math.round(10*s));
+    block(cx-36*s, 36*s,  60*s, 30*s, c(1)); // body
+    block(cx-32*s, 66*s,  13*s, 30*s, c(2)); // leg FL
+    block(cx-14*s, 66*s,  13*s, 30*s, c(2)); // leg FR
+    block(cx+ 4*s, 66*s,  13*s, 30*s, c(2)); // leg BL
+    block(cx+22*s, 66*s,  13*s, 30*s, c(2)); // leg BR
+    // tail
+    block(cx-42*s, 30*s,   8*s, 16*s, c(1));
+
+  } else if (bodyType === 'bird') {
+    block(cx-10*s, 20*s,  20*s, 20*s, c(0)); // head
+    // beak
+    ctx.fillStyle = '#d4900a';
+    ctx.fillRect(Math.round(cx+8*s), Math.round(30*s), Math.round(10*s), Math.round(6*s));
+    block(cx-14*s, 40*s,  28*s, 26*s, c(1)); // body
+    block(cx-32*s, 40*s,  18*s, 18*s, c(2)); // L wing
+    block(cx+14*s, 40*s,  18*s, 18*s, c(2)); // R wing
+    ctx.fillStyle = '#d4900a';
+    ctx.fillRect(Math.round(cx-6*s), Math.round(66*s), Math.round(5*s), Math.round(18*s)); // L leg
+    ctx.fillRect(Math.round(cx+1*s), Math.round(66*s), Math.round(5*s), Math.round(18*s)); // R leg
+
+  } else if (bodyType === 'slime') {
+    // outer slime
+    const or = 10*s, ox = cx-38*s, oy = 18*s, ow = 76*s, oh = 70*s;
+    ctx.fillStyle = c(0);
+    ctx.beginPath();
+    ctx.moveTo(ox+or, oy);
+    ctx.lineTo(ox+ow-or, oy); ctx.quadraticCurveTo(ox+ow, oy, ox+ow, oy+or);
+    ctx.lineTo(ox+ow, oy+oh-or); ctx.quadraticCurveTo(ox+ow, oy+oh, ox+ow-or, oy+oh);
+    ctx.lineTo(ox+or, oy+oh); ctx.quadraticCurveTo(ox, oy+oh, ox, oy+oh-or);
+    ctx.lineTo(ox, oy+or); ctx.quadraticCurveTo(ox, oy, ox+or, oy);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    // inner slime
+    block(cx-20*s, 34*s, 40*s, 36*s, c(1));
+    // eyes
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(Math.round(cx-14*s), Math.round(42*s), Math.round(9*s), Math.round(9*s));
+    ctx.fillRect(Math.round(cx+ 5*s), Math.round(42*s), Math.round(9*s), Math.round(9*s));
+    ctx.fillRect(Math.round(cx-10*s), Math.round(56*s), Math.round(20*s), Math.round(4*s));
+
+  } else if (bodyType === 'bat') {
+    // wings
+    block(cx-50*s, 30*s, 44*s, 34*s, c(2));
+    block(cx+ 6*s, 30*s, 44*s, 34*s, c(2));
+    // ears
+    block(cx-12*s, 8*s,   8*s, 14*s, c(0));
+    block(cx+ 4*s,  8*s,  8*s, 14*s, c(0));
+    // head
+    block(cx-12*s, 18*s,  24*s, 22*s, c(0));
+    // body
+    block(cx-10*s, 40*s,  20*s, 24*s, c(1));
+  }
 }
 
 // ── RECIPES ────────────────────────────────────────────────────────────────

@@ -204,6 +204,7 @@ function generateEntityBP(entity, namespace) {
     },
     'minecraft:movement.basic': {},
     'minecraft:jump.static': {},
+    'minecraft:physics': {},
     'minecraft:behavior.look_at_player': { priority: 7, look_distance: 8 },
     'minecraft:behavior.random_look_around': { priority: 8 },
     'minecraft:behavior.random_stroll': { priority: 6, speed_multiplier: 1.0 }

@@ -597,47 +597,50 @@ const ITEM_TEMPLATES = {
 
 // ── Entity UV region guides (scaled to 16×16 painter) ──────────────────────
 // Draws faint labeled outlines to show where each body-part UV maps
+// UV guide coordinates match the actual Bedrock geometry UV layout.
+// All coordinates are in 16×16 painter space (= 64×64 skin space ÷ 4).
 const ENTITY_UV_GUIDES = {
+  // Steve/humanoid: 64×64 skin — standard Bedrock UV layout
   humanoid: [
-    { label:'Head',  x:2, y:0, w:5, h:4 },
-    { label:'Body',  x:3, y:5, w:5, h:5 },
-    { label:'R.Arm', x:9, y:5, w:3, h:5 },
-    { label:'R.Leg', x:0, y:5, w:3, h:5 },
-    { label:'L.Arm', x:7, y:12,w:3, h:4 },
-    { label:'L.Leg', x:3, y:12,w:3, h:4 },
+    { label:'Head',  x:0,  y:0,  w:8, h:4 },  // 64x64 → (0,0,32,16) head island
+    { label:'Body',  x:4,  y:4,  w:6, h:4 },  // (16,16,24,16) body
+    { label:'R.Arm', x:10, y:4,  w:4, h:4 },  // (40,16,16,16) right arm
+    { label:'R.Leg', x:0,  y:4,  w:4, h:4 },  // (0,16,16,16)  right leg
+    { label:'L.Arm', x:8,  y:12, w:4, h:4 },  // (32,48,16,16) left arm
+    { label:'L.Leg', x:4,  y:12, w:4, h:4 },  // (16,48,16,16) left leg
   ],
   undead: [
-    { label:'Head',  x:2, y:0, w:5, h:4 },
-    { label:'Body',  x:3, y:5, w:5, h:5 },
-    { label:'R.Arm', x:9, y:5, w:3, h:5 },
-    { label:'R.Leg', x:0, y:5, w:3, h:5 },
-    { label:'L.Arm', x:7, y:12,w:3, h:4 },
-    { label:'L.Leg', x:3, y:12,w:3, h:4 },
+    { label:'Head',  x:0,  y:0,  w:8, h:4 },
+    { label:'Body',  x:4,  y:4,  w:6, h:4 },
+    { label:'R.Arm', x:10, y:4,  w:4, h:4 },
+    { label:'R.Leg', x:0,  y:4,  w:4, h:4 },
+    { label:'L.Arm', x:8,  y:12, w:4, h:4 },
+    { label:'L.Leg', x:4,  y:12, w:4, h:4 },
   ],
+  // Pig: 64×32 skin. Painter 16×16 maps to 64×32 → each painter pixel = 4×2 tex px.
+  // We approximate using the top half of the painter (y 0–7 ≈ rows 0–31 of texture).
   quadruped: [
-    { label:'Head',  x:0, y:0, w:6, h:3 },
-    { label:'Body',  x:6, y:3, w:8, h:5 },
-    { label:'Leg 1', x:0, y:5, w:2, h:6 },
-    { label:'Leg 2', x:2, y:5, w:2, h:6 },
-    { label:'Leg 3', x:4, y:5, w:2, h:6 },
-    { label:'Leg 4', x:6, y:5, w:2, h:6 },
+    { label:'Head',  x:0,  y:0,  w:7, h:4 },  // pig head island ~(0,0,28,14) in 64x32
+    { label:'Body',  x:7,  y:2,  w:7, h:6 },  // body ~(28,8,28,16)
+    { label:'Leg',   x:0,  y:4,  w:4, h:4 },  // all 4 legs share same UV strip
   ],
+  // Chicken: 64×32 skin.
   bird: [
-    { label:'Head',  x:0, y:0, w:5, h:3 },
-    { label:'Body',  x:5, y:2, w:7, h:6 },
-    { label:'Wing L',x:1, y:5, w:3, h:6 },
-    { label:'Wing R',x:1, y:11,w:3, h:5 },
-    { label:'Leg',   x:5, y:9, w:2, h:5 },
-    { label:'Beak',  x:12,y:0, w:3, h:3 },
+    { label:'Head',  x:0,  y:0,  w:4, h:4 },
+    { label:'Body',  x:4,  y:2,  w:8, h:6 },
+    { label:'Beak',  x:12, y:0,  w:4, h:4 },
+    { label:'Legs',  x:0,  y:6,  w:4, h:4 },
   ],
+  // Slime: two concentric cubes on the atlas.
   slime: [
-    { label:'Outer', x:0, y:0, w:8, h:8 },
-    { label:'Inner', x:8, y:0, w:8, h:8 },
+    { label:'Outer', x:0,  y:0,  w:8, h:8 },
+    { label:'Inner', x:8,  y:0,  w:8, h:8 },
   ],
+  // Bat: 64×32 skin.
   bat: [
-    { label:'Body',  x:0, y:0, w:6, h:5 },
-    { label:'Head',  x:6, y:0, w:5, h:4 },
-    { label:'Wing',  x:0, y:6, w:16,h:6 },
+    { label:'Body',  x:0,  y:0,  w:5, h:6 },
+    { label:'Head',  x:5,  y:0,  w:5, h:5 },
+    { label:'Wings', x:0,  y:6,  w:16, h:6 },
   ],
 };
 
@@ -729,7 +732,7 @@ function tpSave() {
   closeTexturePainter();
   const mc = document.getElementById('main-content');
   if (t === 'item') renderItems(mc);
-  else if (t === 'entity') renderEntities(mc);
+  else if (t === 'entity') { renderEntities(mc); updateEntityPreview(obj); }
   else renderBlocks(mc);
 }
 
