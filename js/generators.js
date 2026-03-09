@@ -262,6 +262,34 @@ function generateEntityBP(entity, namespace) {
   };
 }
 
+// ── ENTITY RESOURCE PACK ───────────────────────────────────────────────────
+
+function generateEntityClientEntity(entity, namespace) {
+  const id = resolveId(entity.identifier, namespace);
+  const texName = id.replace(':', '_');
+
+  const description = {
+    identifier: id,
+    materials: { default: 'entity_alphatest' },
+    textures: { default: `textures/entity/${texName}` },
+    geometry: { default: 'geometry.humanoid.custom' },
+    render_controllers: ['controller.render.default'],
+    spawn_egg: {
+      base_color: entity.color || '#888888',
+      overlay_color: entity.color2 || '#444444'
+    }
+  };
+
+  if (entity.isSpawnable !== false) {
+    description.enable_attachables = false;
+  }
+
+  return {
+    format_version: '1.10.0',
+    'minecraft:client_entity': { description }
+  };
+}
+
 // ── RECIPES ────────────────────────────────────────────────────────────────
 
 function generateRecipeBP(recipe, namespace) {

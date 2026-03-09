@@ -44,6 +44,54 @@ async function makeItemTexturePng(hexColor) {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
+// Generate a simple 64x64 entity skin texture (humanoid layout placeholder)
+async function makeEntityTexturePng(hexColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+
+  // Transparent base so unused UV areas are empty
+  ctx.clearRect(0, 0, 64, 64);
+
+  const base = hexColor || '#888888';
+  const dark = 'rgba(0,0,0,0.25)';
+  const light = 'rgba(255,255,255,0.18)';
+
+  // Fill all standard humanoid UV islands with the base color
+  // Head outer (8x8 face + sides)
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, 32, 16);
+  // Body
+  ctx.fillRect(16, 16, 24, 16);
+  // Right arm
+  ctx.fillRect(40, 16, 16, 16);
+  // Right leg
+  ctx.fillRect(0, 16, 16, 16);
+  // Left arm (mirrored in 1.8+ layout)
+  ctx.fillRect(32, 48, 16, 16);
+  // Left leg
+  ctx.fillRect(16, 48, 16, 16);
+
+  // Simple shading: darken bottom half of each region
+  ctx.fillStyle = dark;
+  ctx.fillRect(0, 8, 32, 8);
+  ctx.fillRect(16, 24, 24, 8);
+  ctx.fillRect(40, 24, 16, 8);
+  ctx.fillRect(0, 24, 16, 8);
+  ctx.fillRect(32, 56, 16, 8);
+  ctx.fillRect(16, 56, 16, 8);
+
+  // Light highlight: top strip of each region
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, 32, 2);
+  ctx.fillRect(16, 16, 24, 2);
+  ctx.fillRect(40, 16, 16, 2);
+  ctx.fillRect(0, 16, 16, 2);
+
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
 // Convert a data URL to a Blob
 async function dataUrlToBlob(dataUrl) {
   const res = await fetch(dataUrl);
@@ -115,6 +163,25 @@ async function exportAddon(state) {
   // ── Resource Pack ─────────────────────────────────────────────────────────
 
   rp.file('manifest.json', JSON.stringify(generateManifestRP(state.project), null, 2));
+
+  // Entity RP definitions (client entity JSON + textures)
+  if (state.entities.length > 0) {
+    const rpEntDir = rp.folder('entity');
+    const entTexDir = rp.folder('textures').folder('entity');
+    for (const entity of state.entities) {
+      const id = entity.identifier.includes(':') ? entity.identifier : `${ns}:${entity.identifier}`;
+      const texName = id.replace(':', '_');
+      const shortId = id.includes(':') ? id.split(':')[1] : id;
+
+      const clientJson = generateEntityClientEntity(entity, ns);
+      rpEntDir.file(`${shortId}.json`, JSON.stringify(clientJson, null, 2));
+
+      const blob = entity.textureDataUrl
+        ? await dataUrlToBlob(entity.textureDataUrl)
+        : await makeEntityTexturePng(entity.color || '#888888');
+      entTexDir.file(`${texName}.png`, blob);
+    }
+  }
 
   // Item RP definitions (required for items to register in 1.20+)
   if (state.items.length > 0) {
