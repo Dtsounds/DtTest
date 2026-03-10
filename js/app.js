@@ -98,8 +98,15 @@ function updateJsonPreview() {
       content = JSON.stringify(generateBlockBP(editingBlock, ns), null, 2);
     }
   } else if (tab === 'entities' && editingEntity) {
-    tabs = ['Entity BP'];
-    content = JSON.stringify(generateEntityBP(editingEntity, ns), null, 2);
+    tabs = ['Entity BP', 'Entity RP', 'Geometry'];
+    const sel = state.ui.jsonTab || 'Entity BP';
+    if (sel === 'Entity RP') {
+      content = JSON.stringify(generateEntityClientEntity(editingEntity, ns), null, 2);
+    } else if (sel === 'Geometry') {
+      content = JSON.stringify(generateEntityGeometry(editingEntity, ns), null, 2);
+    } else {
+      content = JSON.stringify(generateEntityBP(editingEntity, ns), null, 2);
+    }
   } else if (tab === 'recipes' && editingRecipe) {
     tabs = ['Recipe BP'];
     const json = generateRecipeBP(editingRecipe, ns);

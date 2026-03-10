@@ -62,7 +62,7 @@ function generateItemBP(item, namespace) {
   const texName = id.replace(':', '_');
 
   const components = {
-    'minecraft:max_stack_size': Math.min(64, Math.max(1, parseInt(item.maxStackSize) || 64)),
+    'minecraft:max_stack_size': Math.min(64, Math.max(1, parseInt(item.maxStackSize) || 1)),
     'minecraft:icon': { texture: texName }
   };
 
@@ -204,6 +204,12 @@ function generateEntityBP(entity, namespace) {
     },
     'minecraft:movement.basic': {},
     'minecraft:jump.static': {},
+    'minecraft:breathable': {
+      breathes_air: true,
+      breathes_water: !!entity.swimsInWater,
+      total_supply: 15,
+      suffocate_time: -1
+    },
     'minecraft:physics': {},
     'minecraft:behavior.look_at_player': { priority: 7, look_distance: 8 },
     'minecraft:behavior.random_look_around': { priority: 8 },
@@ -233,6 +239,11 @@ function generateEntityBP(entity, namespace) {
       start_distance: 10.0,
       stop_distance: 2.0
     };
+  }
+
+  if (entity.swimsInWater) {
+    components['minecraft:underwater_movement'] = { value: parseFloat(entity.movementSpeed) * 0.5 || 0.12 };
+    components['minecraft:navigation.swim'] = { can_path_over_water: true };
   }
 
   if (parseInt(entity.dropsXP) > 0) {
@@ -536,15 +547,18 @@ function generateLangFile(items, blocks, entities, namespace) {
   const lines = [];
   for (const item of items) {
     const id = resolveId(item.identifier, namespace);
-    lines.push(`item.${id}.name=${item.displayName || item.identifier}`);
+    const name = item.displayName || id.split(':').pop();
+    lines.push(`item.${id}.name=${name}`);
   }
   for (const block of blocks) {
     const id = resolveId(block.identifier, namespace);
-    lines.push(`tile.${id}.name=${block.displayName || block.identifier}`);
+    const name = block.displayName || id.split(':').pop();
+    lines.push(`tile.${id}.name=${name}`);
   }
   for (const entity of entities) {
     const id = resolveId(entity.identifier, namespace);
-    lines.push(`entity.${id}.name=${entity.displayName || entity.identifier}`);
+    const name = entity.displayName || id.split(':').pop();
+    lines.push(`entity.${id}.name=${name}`);
   }
   return lines.join('\n');
 }
