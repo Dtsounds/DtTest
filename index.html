@@ -16,6 +16,7 @@
     <div class="header-actions">
       <button class="btn btn-secondary btn-sm" onclick="toggleJsonPanel()">📄 JSON Preview</button>
       <button class="btn btn-secondary btn-sm" onclick="showInstallModal()">📖 Install Guide</button>
+      <button class="btn btn-launch" onclick="doLaunch()">▶ Launch in Minecraft</button>
       <button class="btn btn-primary" onclick="doExport()">⬇ Export .mcaddon</button>
     </div>
   </header>
@@ -234,6 +235,89 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeModal('install-modal')">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAUNCH MODAL -->
+<div class="modal-overlay hidden" id="launch-modal">
+  <div class="modal launch-modal-inner">
+    <button class="close-btn launch-close-btn" onclick="closeLaunchModal()">×</button>
+
+    <!-- Step: building -->
+    <div id="launch-step-building" class="launch-step">
+      <div class="launch-spinner"></div>
+      <div class="launch-step-title">Building addon…</div>
+      <div class="launch-step-sub">Generating files and textures</div>
+    </div>
+
+    <!-- Step: ready -->
+    <div id="launch-step-ready" class="launch-step hidden">
+      <div class="launch-checkmark">✓</div>
+      <div class="launch-step-title" id="launch-filename"></div>
+      <div class="launch-step-sub">Download started — now open the file below</div>
+
+      <div class="launch-platform-tabs" id="launch-platform-tabs">
+        <div class="launch-ptab active" data-platform="windows" onclick="setLaunchPlatform('windows')">🪟 Windows</div>
+        <div class="launch-ptab" data-platform="android" onclick="setLaunchPlatform('android')">📱 Android</div>
+        <div class="launch-ptab" data-platform="ios" onclick="setLaunchPlatform('ios')">🍎 iOS</div>
+      </div>
+
+      <div class="launch-instructions" id="launch-instructions-windows">
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">1</div>
+          <div>Look for the downloaded file in your <strong>browser's download bar</strong> (bottom or top of the browser window) or in your <strong>Downloads folder</strong>.</div>
+        </div>
+        <div class="launch-arrow-hint">
+          <div class="launch-arrow-box">
+            <div class="launch-arrow-label">↓ Your browser download bar</div>
+            <div class="launch-fake-bar">
+              <div class="launch-fake-file" id="launch-fake-filename">MyAddon.mcaddon</div>
+              <span class="launch-fake-arrow launch-bounce">← click here</span>
+            </div>
+          </div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">2</div>
+          <div><strong>Double-click</strong> the <code>.mcaddon</code> file. Minecraft will open automatically and import your addon.</div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">3</div>
+          <div>In Minecraft → <strong>Create/Edit World</strong> → activate both packs → Play!</div>
+        </div>
+      </div>
+
+      <div class="launch-instructions hidden" id="launch-instructions-android">
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">1</div>
+          <div>Tap the <strong>download notification</strong> or open your file manager → <strong>Downloads</strong> folder.</div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">2</div>
+          <div>Tap the <code>.mcaddon</code> file and select <strong>"Open with Minecraft"</strong>. The game will import it.</div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">3</div>
+          <div>In Minecraft → Edit a world → activate both packs → Play!</div>
+        </div>
+      </div>
+
+      <div class="launch-instructions hidden" id="launch-instructions-ios">
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">1</div>
+          <div>In Safari, tap the <strong>download icon</strong> (top right) to see your downloads.</div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">2</div>
+          <div>Tap the <code>.mcaddon</code> file → <strong>Share</strong> → <strong>Open with Minecraft</strong>.</div>
+        </div>
+        <div class="launch-instr-step">
+          <div class="launch-instr-num">3</div>
+          <div>In Minecraft → Edit a world → activate both packs → Play!</div>
+        </div>
+      </div>
+
+      <button class="btn btn-launch launch-retry-btn" onclick="doLaunch()">↺ Re-download</button>
     </div>
   </div>
 </div>

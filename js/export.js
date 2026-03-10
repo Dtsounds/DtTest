@@ -104,11 +104,11 @@ async function dataUrlToBlob(dataUrl) {
   return res.blob();
 }
 
-async function exportAddon(state) {
+async function exportAddon(state, opts = {}) {
   const ns = (state.project.namespace || 'myaddon').toLowerCase().replace(/[^a-z0-9_]/g, '_');
   const name = (state.project.name || 'MyAddon').replace(/[^a-zA-Z0-9 _-]/g, '');
 
-  showToast('Generating addon files…', 'info');
+  if (!opts.silent) showToast('Generating addon files…', 'info');
 
   const zip = new JSZip();
   const bp = zip.folder(`${name}_BP`);
@@ -279,9 +279,15 @@ async function exportAddon(state) {
   bp.file('pack_icon.png', iconBlob);
   rp.file('pack_icon.png', iconBlob);
 
-  // ── Download ─────────────────────────────────────────────────────────────
+  // ── Build ZIP ─────────────────────────────────────────────────────────────
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+
+  if (opts.silent) {
+    // Caller handles download; just return the blob
+    return blob;
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -304,5 +310,72 @@ function doExport() {
   exportAddon(state).catch(err => {
     console.error(err);
     showToast('Export failed: ' + err.message, 'error');
+  });
+}
+
+// ── Launch in Minecraft ────────────────────────────────────────────────────
+
+function _detectPlatform() {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return 'android';
+  if (/ipad|iphone|ipod/i.test(ua)) return 'ios';
+  return 'windows'; // default (covers Windows, Mac, Linux — all desktop)
+}
+
+function closeLaunchModal() {
+  document.getElementById('launch-modal').classList.add('hidden');
+}
+
+function setLaunchPlatform(platform) {
+  document.querySelectorAll('.launch-ptab').forEach(el =>
+    el.classList.toggle('active', el.dataset.platform === platform));
+  ['windows', 'android', 'ios'].forEach(p => {
+    const el = document.getElementById(`launch-instructions-${p}`);
+    if (el) el.classList.toggle('hidden', p !== platform);
+  });
+}
+
+function doLaunch() {
+  const total = state.items.length + state.blocks.length +
+                state.entities.length + state.recipes.length;
+  if (total === 0) {
+    showToast('Add at least one item, block, entity, or recipe first!', 'error');
+    return;
+  }
+
+  // Show modal in "building" state
+  const modal = document.getElementById('launch-modal');
+  modal.classList.remove('hidden');
+  document.getElementById('launch-step-building').classList.remove('hidden');
+  document.getElementById('launch-step-ready').classList.add('hidden');
+
+  // Detect platform and pre-select tab
+  const platform = _detectPlatform();
+
+  const ns = (state.project.namespace || 'myaddon').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const name = (state.project.name || 'MyAddon').replace(/[^a-zA-Z0-9 _-]/g, '');
+  const filename = `${name}.mcaddon`;
+
+  exportAddon(state, { silent: true }).then(blob => {
+    // Trigger download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    // Flip modal to "ready" state
+    document.getElementById('launch-step-building').classList.add('hidden');
+    document.getElementById('launch-step-ready').classList.remove('hidden');
+    document.getElementById('launch-filename').textContent = `✓ ${filename} ready!`;
+    document.getElementById('launch-fake-filename').textContent = filename;
+    setLaunchPlatform(platform);
+  }).catch(err => {
+    console.error(err);
+    closeLaunchModal();
+    showToast('Build failed: ' + err.message, 'error');
   });
 }
