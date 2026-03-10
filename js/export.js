@@ -170,9 +170,10 @@ async function exportAddon(state) {
 
   rp.file('manifest.json', JSON.stringify(generateManifestRP(state.project), null, 2));
 
-  // Entity RP definitions (client entity JSON + textures)
+  // Entity RP definitions (client entity JSON + geometry + textures)
   if (state.entities.length > 0) {
     const rpEntDir = rp.folder('entity');
+    const modelsEntDir = rp.folder('models').folder('entity');
     const entTexDir = rp.folder('textures').folder('entity');
     for (const entity of state.entities) {
       const id = entity.identifier.includes(':') ? entity.identifier : `${ns}:${entity.identifier}`;
@@ -181,6 +182,9 @@ async function exportAddon(state) {
 
       const clientJson = generateEntityClientEntity(entity, ns);
       rpEntDir.file(`${shortId}.json`, JSON.stringify(clientJson, null, 2));
+
+      const geoJson = generateEntityGeometry(entity, ns);
+      modelsEntDir.file(`${shortId}.json`, JSON.stringify(geoJson, null, 2));
 
       let blob;
       if (entity.textureDataUrl) {
@@ -245,11 +249,11 @@ async function exportAddon(state) {
   // Atlas descriptors
   if (state.blocks.length > 0) {
     texDir.file('terrain_texture.json',
-      JSON.stringify(generateTerrainTexture(state.blocks, ns), null, 2));
+      JSON.stringify(generateTerrainTexture(state.blocks, ns, name), null, 2));
   }
   if (state.items.length > 0) {
     texDir.file('item_texture.json',
-      JSON.stringify(generateItemTexture(state.items, ns), null, 2));
+      JSON.stringify(generateItemTexture(state.items, ns, name), null, 2));
   }
 
   // Language file

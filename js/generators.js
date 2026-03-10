@@ -248,7 +248,7 @@ function generateEntityBP(entity, namespace) {
   }
 
   return {
-    format_version: '1.18.10',
+    format_version: '1.20.10',
     'minecraft:entity': {
       description: {
         identifier: id,
@@ -265,19 +265,115 @@ function generateEntityBP(entity, namespace) {
 
 // ── ENTITY RESOURCE PACK ───────────────────────────────────────────────────
 
-const ENTITY_BODY_GEOMETRIES = {
-  humanoid:  'geometry.humanoid.custom',
-  undead:    'geometry.zombie',
-  quadruped: 'geometry.pig',
-  bird:      'geometry.chicken',
-  slime:     'geometry.slime',
-  bat:       'geometry.bat',
-};
+function generateEntityGeometry(entity, namespace) {
+  const id = resolveId(entity.identifier, namespace);
+  const geoId = `geometry.${id.replace(':', '_')}`;
+  const is32h = entity.bodyType === 'quadruped' || entity.bodyType === 'bird' || entity.bodyType === 'slime';
+  const tw = 64, th = is32h ? 32 : 64;
+
+  let bones = [];
+  switch (entity.bodyType) {
+    case 'quadruped':
+      bones = [
+        { name: 'root', pivot: [0, 0, 0] },
+        { name: 'body', parent: 'root', pivot: [0, 10, 0],
+          cubes: [{ origin: [-5, 6, -10], size: [10, 8, 16], uv: [28, 8] }] },
+        { name: 'head', parent: 'body', pivot: [0, 12, -8],
+          cubes: [{ origin: [-4, 8, -14], size: [8, 8, 8], uv: [0, 0] }] },
+        { name: 'leg0', parent: 'root', pivot: [-3, 6, -5],
+          cubes: [{ origin: [-5, 0, -7], size: [4, 6, 4], uv: [0, 16] }] },
+        { name: 'leg1', parent: 'root', pivot: [3, 6, -5],
+          cubes: [{ origin: [1, 0, -7], size: [4, 6, 4], uv: [0, 16] }] },
+        { name: 'leg2', parent: 'root', pivot: [-3, 6, 5],
+          cubes: [{ origin: [-5, 0, 3], size: [4, 6, 4], uv: [0, 16] }] },
+        { name: 'leg3', parent: 'root', pivot: [3, 6, 5],
+          cubes: [{ origin: [1, 0, 3], size: [4, 6, 4], uv: [0, 16] }] }
+      ];
+      break;
+    case 'bird':
+      bones = [
+        { name: 'root', pivot: [0, 0, 0] },
+        { name: 'body', parent: 'root', pivot: [0, 8, 0],
+          cubes: [{ origin: [-3, 4, -3], size: [6, 8, 6], uv: [20, 0] }] },
+        { name: 'head', parent: 'body', pivot: [0, 12, 0],
+          cubes: [{ origin: [-2, 12, -2], size: [4, 4, 4], uv: [0, 0] }] },
+        { name: 'beak', parent: 'head', pivot: [0, 12, -2],
+          cubes: [{ origin: [-1, 11, -4], size: [2, 2, 2], uv: [14, 0] }] },
+        { name: 'leg0', parent: 'root', pivot: [-1, 4, 0],
+          cubes: [{ origin: [-2, 0, -1], size: [2, 4, 2], uv: [0, 8] }] },
+        { name: 'leg1', parent: 'root', pivot: [1, 4, 0],
+          cubes: [{ origin: [0, 0, -1], size: [2, 4, 2], uv: [8, 8] }] },
+        { name: 'wing0', parent: 'body', pivot: [-3, 11, 0],
+          cubes: [{ origin: [-5, 9, -2], size: [2, 4, 4], uv: [34, 0] }] },
+        { name: 'wing1', parent: 'body', pivot: [3, 11, 0],
+          cubes: [{ origin: [3, 9, -2], size: [2, 4, 4], uv: [44, 0] }] }
+      ];
+      break;
+    case 'slime':
+      bones = [
+        { name: 'root', pivot: [0, 0, 0] },
+        { name: 'body', parent: 'root', pivot: [0, 0, 0],
+          cubes: [{ origin: [-4, 0, -4], size: [8, 8, 8], uv: [0, 0] }] },
+        { name: 'eyes', parent: 'body', pivot: [0, 0, 0],
+          cubes: [
+            { origin: [-3, 4, -5], size: [2, 2, 1], uv: [32, 0] },
+            { origin: [1, 4, -5],  size: [2, 2, 1], uv: [32, 0] }
+          ] }
+      ];
+      break;
+    case 'bat':
+      bones = [
+        { name: 'root', pivot: [0, 24, 0] },
+        { name: 'body', parent: 'root', pivot: [0, 24, 0],
+          cubes: [{ origin: [-3, 17, -2], size: [6, 9, 4], uv: [0, 16] }] },
+        { name: 'head', parent: 'body', pivot: [0, 24, 0],
+          cubes: [{ origin: [-3, 22, -3], size: [6, 6, 6], uv: [0, 0] }] },
+        { name: 'wing0', parent: 'body', pivot: [-3, 24, 0],
+          cubes: [{ origin: [-15, 15, 0], size: [12, 16, 1], uv: [22, 0] }] },
+        { name: 'wing1', parent: 'body', pivot: [3, 24, 0],
+          cubes: [{ origin: [3, 15, 0], size: [12, 16, 1], uv: [22, 0] }] }
+      ];
+      break;
+    case 'undead':
+    case 'humanoid':
+    default:
+      bones = [
+        { name: 'root', pivot: [0, 0, 0] },
+        { name: 'body', parent: 'root', pivot: [0, 24, 0],
+          cubes: [{ origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16] }] },
+        { name: 'head', parent: 'body', pivot: [0, 24, 0],
+          cubes: [{ origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0] }] },
+        { name: 'rightArm', parent: 'body', pivot: [-5, 22, 0],
+          cubes: [{ origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16] }] },
+        { name: 'leftArm', parent: 'body', pivot: [5, 22, 0],
+          cubes: [{ origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48] }] },
+        { name: 'rightLeg', parent: 'root', pivot: [-1.9, 12, 0],
+          cubes: [{ origin: [-4, 0, -2], size: [4, 12, 4], uv: [0, 16] }] },
+        { name: 'leftLeg', parent: 'root', pivot: [1.9, 12, 0],
+          cubes: [{ origin: [0, 0, -2], size: [4, 12, 4], uv: [16, 48] }] }
+      ];
+  }
+
+  return {
+    format_version: '1.12.0',
+    'minecraft:geometry': [{
+      description: {
+        identifier: geoId,
+        texture_width: tw,
+        texture_height: th,
+        visible_bounds_width: 2,
+        visible_bounds_height: 2,
+        visible_bounds_offset: [0, 1, 0]
+      },
+      bones
+    }]
+  };
+}
 
 function generateEntityClientEntity(entity, namespace) {
   const id = resolveId(entity.identifier, namespace);
   const texName = id.replace(':', '_');
-  const geometry = ENTITY_BODY_GEOMETRIES[entity.bodyType] || 'geometry.humanoid.custom';
+  const geometry = `geometry.${id.replace(':', '_')}`;
 
   const description = {
     identifier: id,
@@ -406,7 +502,7 @@ function generateItemRP(item, namespace) {
 
 // ── RESOURCE PACK HELPERS ─────────────────────────────────────────────────
 
-function generateTerrainTexture(blocks, namespace) {
+function generateTerrainTexture(blocks, namespace, packName) {
   const texture_data = {};
   for (const block of blocks) {
     const id = resolveId(block.identifier, namespace);
@@ -414,7 +510,7 @@ function generateTerrainTexture(blocks, namespace) {
     texture_data[texName] = { textures: `textures/blocks/${texName}` };
   }
   return {
-    resource_pack_name: 'pack.name',
+    resource_pack_name: packName || 'vanilla',
     texture_name: 'atlas.terrain',
     padding: 8,
     num_mip_levels: 4,
@@ -422,7 +518,7 @@ function generateTerrainTexture(blocks, namespace) {
   };
 }
 
-function generateItemTexture(items, namespace) {
+function generateItemTexture(items, namespace, packName) {
   const texture_data = {};
   for (const item of items) {
     const id = resolveId(item.identifier, namespace);
@@ -430,7 +526,7 @@ function generateItemTexture(items, namespace) {
     texture_data[texName] = { textures: `textures/items/${texName}` };
   }
   return {
-    resource_pack_name: 'pack.name',
+    resource_pack_name: packName || 'vanilla',
     texture_name: 'atlas.items',
     texture_data
   };
