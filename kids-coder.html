@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Future Coder Academy!</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --purple: #6c3bff;
+  --pink: #ff3bac;
+  --cyan: #3bf0ff;
+  --yellow: #ffe03b;
+  --green: #3bff8a;
+  --orange: #ff8c3b;
+  --dark: #0d0d1a;
+  --card: #1a1a35;
+  --card2: #22224a;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--dark);
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Stars background ── */
+.stars {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle 3s infinite;
+}
+@keyframes twinkle {
+  0%,100% { opacity: 0.2; } 50% { opacity: 1; }
+}
+
+/* ── Layout ── */
+#app { position: relative; z-index: 1; }
+
+/* ── SCREEN base ── */
+.screen {
+  display: none;
+  min-height: 100vh;
+  padding: 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.screen.active { display: flex; }
+
+/* ── WELCOME ── */
+#welcome { background: radial-gradient(ellipse at 50% 30%, #2a0066 0%, var(--dark) 70%); }
+.logo { font-size: clamp(2rem, 8vw, 4.5rem); font-weight: 900; text-align: center;
+  background: linear-gradient(135deg, var(--cyan), var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  line-height: 1.1; margin-bottom: 10px;
+}
+.tagline { color: #aaa; font-size: clamp(0.9rem, 3vw, 1.2rem); text-align: center; margin-bottom: 40px; }
+.robot { font-size: clamp(5rem, 20vw, 10rem); animation: float 3s ease-in-out infinite; display: block; text-align: center; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+/* ── Buttons ── */
+.btn {
+  padding: 14px 36px; border: none; border-radius: 50px; font-size: 1.1rem;
+  font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex;
+  align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px;
+}
+.btn:hover { transform: scale(1.07); box-shadow: 0 0 30px rgba(108,59,255,0.6); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(135deg, var(--purple), var(--pink)); color: #fff; }
+.btn-secondary { background: linear-gradient(135deg, var(--cyan), var(--green)); color: #000; }
+.btn-yellow { background: linear-gradient(135deg, var(--yellow), var(--orange)); color: #000; }
+.btn-sm { padding: 8px 20px; font-size: 0.85rem; border-radius: 30px; }
+.btn-option {
+  background: var(--card2); border: 2px solid #444; color: #fff;
+  padding: 14px 20px; border-radius: 16px; font-size: 1rem; font-weight: 600;
+  cursor: pointer; width: 100%; text-align: left; transition: all 0.2s;
+  margin-bottom: 10px;
+}
+.btn-option:hover { border-color: var(--purple); background: #2a2a55; transform: translateX(5px); }
+.btn-option.correct { border-color: var(--green); background: #0d3320; color: var(--green); }
+.btn-option.wrong   { border-color: #ff4444; background: #330d0d; color: #ff6666; }
+
+/* ── Progress bar ── */
+.progress-bar-wrap { width: 100%; max-width: 600px; background: #222; border-radius: 20px;
+  height: 12px; margin: 10px auto 30px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 20px; transition: width 0.5s;
+  background: linear-gradient(90deg, var(--purple), var(--pink)); }
+
+/* ── World map ── */
+#worldmap { background: radial-gradient(ellipse at 50% 20%, #001a44 0%, var(--dark) 70%); }
+.world-title { font-size: clamp(1.5rem, 5vw, 2.5rem); font-weight: 900; margin-bottom: 8px; text-align: center; }
+.world-subtitle { color: #888; margin-bottom: 40px; text-align: center; font-size: 1rem; }
+.worlds-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px; width: 100%; max-width: 960px;
+}
+.world-card {
+  background: var(--card); border-radius: 20px; padding: 24px;
+  border: 2px solid #333; cursor: pointer; transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.world-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+}
+.world-card:nth-child(1)::before { background: var(--cyan); }
+.world-card:nth-child(2)::before { background: var(--yellow); }
+.world-card:nth-child(3)::before { background: var(--pink); }
+.world-card:nth-child(4)::before { background: var(--green); }
+.world-card:nth-child(5)::before { background: var(--orange); }
+.world-card:hover { transform: translateY(-6px); border-color: var(--purple);
+  box-shadow: 0 10px 40px rgba(108,59,255,0.3); }
+.world-card.locked { opacity: 0.4; cursor: not-allowed; }
+.world-card.locked:hover { transform: none; box-shadow: none; }
+.world-card.done { border-color: var(--green); }
+.world-emoji { font-size: 3rem; margin-bottom: 12px; display: block; }
+.world-name { font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+.world-desc { color: #999; font-size: 0.9rem; line-height: 1.4; }
+.world-badge { position: absolute; top: 14px; right: 14px; background: var(--green);
+  color: #000; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.stars-display { display: flex; align-items: center; gap: 6px; font-size: 1.1rem;
+  font-weight: 700; color: var(--yellow); margin-bottom: 30px; }
+
+/* ── Lesson screen ── */
+#lesson { background: radial-gradient(ellipse at 50% 0%, #1a0044 0%, var(--dark) 60%); }
+.lesson-header { width: 100%; max-width: 700px; margin-bottom: 20px; }
+.lesson-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.lesson-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+.lesson-title { font-size: clamp(1.4rem, 5vw, 2.2rem); font-weight: 900; }
+.lesson-card {
+  background: var(--card); border-radius: 24px; padding: 30px;
+  max-width: 700px; width: 100%; border: 1px solid #333;
+}
+.lesson-emoji { font-size: 4rem; text-align: center; display: block; margin-bottom: 20px; }
+.lesson-text { font-size: clamp(1rem, 3vw, 1.15rem); line-height: 1.8; color: #ddd; margin-bottom: 24px; }
+.lesson-text b { color: var(--cyan); }
+.lesson-text .highlight { background: rgba(108,59,255,0.25); border-radius: 8px;
+  padding: 12px 16px; display: block; margin: 16px 0; border-left: 3px solid var(--purple); }
+.lesson-text .tip { background: rgba(59,255,138,0.1); border-radius: 8px;
+  padding: 12px 16px; display: block; margin: 16px 0; border-left: 3px solid var(--green); color: #ccc; }
+
+/* ── Quiz ── */
+.quiz-q { font-size: clamp(1rem, 3vw, 1.2rem); font-weight: 700; margin-bottom: 20px; color: var(--cyan); }
+.quiz-feedback { font-size: 1.1rem; font-weight: 700; padding: 14px 20px; border-radius: 14px;
+  text-align: center; margin-top: 16px; display: none; }
+.quiz-feedback.correct-fb { background: rgba(59,255,138,0.15); color: var(--green); border: 1px solid var(--green); display: block; }
+.quiz-feedback.wrong-fb   { background: rgba(255,68,68,0.15); color: #ff8888; border: 1px solid #ff4444; display: block; }
+
+/* ── Code block ── */
+.code-block {
+  background: #0a0a1a; border: 1px solid #333; border-radius: 12px;
+  padding: 16px 20px; font-family: 'Courier New', monospace; font-size: 0.95rem;
+  line-height: 1.8; color: #e0e0e0; margin: 16px 0; overflow-x: auto;
+}
+.code-block .kw { color: var(--purple); font-weight: bold; }
+.code-block .str { color: var(--yellow); }
+.code-block .fn { color: var(--cyan); }
+.code-block .cm { color: #666; font-style: italic; }
+
+/* ── Drag blocks activity ── */
+.blocks-area {
+  display: flex; flex-wrap: wrap; gap: 10px; padding: 16px;
+  background: #0a0a1a; border-radius: 14px; min-height: 60px;
+  border: 2px dashed #333; margin-bottom: 12px;
+}
+.block {
+  padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;
+  cursor: grab; user-select: none; transition: all 0.15s;
+  border: 2px solid transparent;
+}
+.block:hover { transform: scale(1.05); }
+.block:active { cursor: grabbing; transform: scale(0.97); }
+.block-move   { background: rgba(108,59,255,0.3); border-color: var(--purple); color: #ddd; }
+.block-turn   { background: rgba(255,59,172,0.3); border-color: var(--pink); color: #ddd; }
+.block-say    { background: rgba(59,240,255,0.3); border-color: var(--cyan); color: #ddd; }
+.block-action { background: rgba(255,224,59,0.3); border-color: var(--yellow); color: #ddd; }
+.blocks-label { font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+
+/* ── Robot runner ── */
+#robot-display {
+  width: 100%; background: #0a0a1a; border-radius: 14px; padding: 16px;
+  min-height: 100px; display: flex; align-items: center; justify-content: flex-start;
+  margin-top: 12px; overflow: hidden; position: relative;
+}
+#robot-runner { font-size: 2.5rem; transition: all 0.5s; position: relative; }
+#robot-speech { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: var(--card2); padding: 8px 14px; border-radius: 12px; font-size: 0.85rem;
+  white-space: nowrap; display: none; border: 1px solid #444; }
+
+/* ── Prompt builder ── */
+.prompt-input {
+  width: 100%; background: #0a0a1a; border: 2px solid #444; color: #fff;
+  border-radius: 14px; padding: 14px 18px; font-size: 1rem; font-family: inherit;
+  resize: vertical; min-height: 80px; transition: border-color 0.2s;
+}
+.prompt-input:focus { outline: none; border-color: var(--purple); }
+.prompt-response {
+  background: linear-gradient(135deg, rgba(108,59,255,0.1), rgba(255,59,172,0.1));
+  border: 1px solid #444; border-radius: 14px; padding: 16px 18px;
+  margin-top: 14px; font-size: 0.95rem; line-height: 1.7; color: #ddd;
+  display: none;
+}
+.ai-label { font-size: 0.75rem; color: var(--purple); text-transform: uppercase;
+  letter-spacing: 2px; margin-bottom: 8px; font-weight: 700; }
+
+/* ── Celebration ── */
+.confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1000; overflow: hidden; }
+.confetti-piece {
+  position: absolute; width: 10px; height: 10px; top: -10px;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Certificate ── */
+#certificate {
+  text-align: center; max-width: 640px; background: var(--card);
+  border-radius: 28px; padding: 40px; border: 3px solid var(--yellow);
+  box-shadow: 0 0 60px rgba(255,224,59,0.2);
+}
+#certificate h1 { font-size: clamp(1.6rem, 5vw, 2.5rem); font-weight: 900;
+  background: linear-gradient(135deg, var(--yellow), var(--orange));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+#certificate .cert-name { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 900; color: var(--cyan);
+  margin: 16px 0; }
+#certificate p { color: #bbb; line-height: 1.7; margin-bottom: 16px; }
+.cert-badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin: 20px 0; }
+.cert-badge { background: var(--card2); padding: 8px 16px; border-radius: 20px;
+  font-size: 0.85rem; font-weight: 700; border: 1px solid #444; }
+
+/* ── Utility ── */
+.mt-20 { margin-top: 20px; }
+.text-center { text-align: center; }
+.flex-center { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.gap-12 { gap: 12px; }
+.hidden { display: none !important; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .lesson-card { padding: 20px; }
+  .btn { padding: 12px 24px; font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Confetti container -->
+<div class="confetti-container" id="confetti"></div>
+
+<div id="app">
+
+<!-- ══════════════════════════════════════
+     SCREEN 0 — WELCOME
+══════════════════════════════════════ -->
+<section class="screen active" id="welcome">
+  <span class="robot">🤖</span>
+  <div class="logo">Future Coder<br>Academy!</div>
+  <p class="tagline">Learn to code, talk to AI, and build amazing things!</p>
+  <div style="margin-bottom:30px; text-align:center;">
+    <p style="color:#888; font-size:0.95rem; margin-bottom:18px;">What's your name, future coder?</p>
+    <input id="player-name" type="text" placeholder="Type your name here..." maxlength="20"
+      style="background:#1a1a35; border:2px solid #444; color:#fff; border-radius:14px;
+             padding:12px 20px; font-size:1.1rem; width:280px; text-align:center;
+             outline:none; font-family:inherit;"
+      onfocus="this.style.borderColor='#6c3bff'"
+      onblur="this.style.borderColor='#444'">
+  </div>
+  <button class="btn btn-primary" onclick="startJourney()">
+    🚀 Start My Journey!
+  </button>
+  <p style="margin-top:24px; color:#555; font-size:0.85rem;">5 awesome worlds to explore • No experience needed!</p>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — WORLD MAP
+══════════════════════════════════════ -->
+<section class="screen" id="worldmap">
+  <div class="world-title">Choose Your World, <span id="map-name" style="color:var(--cyan)"></span>!</div>
+  <div class="world-subtitle">Complete each world to unlock the next one</div>
+  <div class="stars-display">
+    <span>⭐</span> <span id="star-count">0</span> stars collected
+  </div>
+  <div class="worlds-grid">
+    <div class="world-card" id="world-card-0" onclick="openWorld(0)">
+      <span class="world-emoji">🍳</span>
+      <div class="world-name">World 1: What is Code?</div>
+      <div class="world-desc">Discover that code is just instructions — like a recipe for computers!</div>
+    </div>
+    <div class="world-card locked" id="world-card-1" onclick="openWorld(1)">
+      <span class="world-emoji">🧩</span>
+      <div class="world-name">World 2: Think Like a Computer</div>
+      <div class="world-desc">Learn about sequences, steps, and how computers follow instructions exactly.</div>
+    </div>
+    <div class="world-card locked" id="world-card-2" onclick="openWorld(2)">
+      <span class="world-emoji">🧠</span>
+      <div class="world-name">World 3: Meet AI!</div>
+      <div class="world-desc">What is Artificial Intelligence? How does it learn? It's pretty amazing!</div>
+    </div>
+    <div class="world-card locked" id="world-card-3" onclick="openWorld(3)">
+      <span class="world-emoji">💬</span>
+      <div class="world-name">World 4: Talk to AI</div>
+      <div class="world-desc">Learn to write great "prompts" — the superpower for working with AI!</div>
+    </div>
+    <div class="world-card locked" id="world-card-4" onclick="openWorld(4)">
+      <span class="world-emoji">⚡</span>
+      <div class="world-name">World 5: Claude Code!</div>
+      <div class="world-desc">Meet Claude Code — an AI that builds things for you. YOU are the boss!</div>
+    </div>
+  </div>
+  <div class="mt-20">
+    <button class="btn btn-sm" style="background:#222; color:#888; border:1px solid #333;"
+      onclick="showCertificate()">🏆 See My Certificate</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — LESSON / ACTIVITY
+══════════════════════════════════════ -->
+<section class="screen" id="lesson">
+  <div class="lesson-header">
+    <div class="lesson-nav">
+      <button class="btn btn-sm" style="background:#222; border:1px solid #333; color:#888;"
+        onclick="goToMap()">← Map</button>
+      <div class="lesson-label" id="lesson-world-label"></div>
+      <div style="color:var(--yellow); font-weight:700;">⭐ <span id="lesson-stars"></span></div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="lesson-progress"></div>
+    </div>
+    <div class="lesson-title" id="lesson-title"></div>
+  </div>
+  <div class="lesson-card" id="lesson-card">
+    <!-- content injected by JS -->
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — CERTIFICATE
+══════════════════════════════════════ -->
+<section class="screen" id="cert-screen">
+  <div id="certificate">
+    <div style="font-size:3.5rem; margin-bottom:16px;">🏆</div>
+    <h1>Certificate of Achievement</h1>
+    <p style="margin-top:8px; color:#777; font-size:0.9rem;">This certifies that</p>
+    <div class="cert-name" id="cert-player-name">Future Coder</div>
+    <p>has completed the <b style="color:#fff">Future Coder Academy</b> and is now an<br>
+       <b style="color:var(--yellow)">AI-Powered Coder of Tomorrow!</b></p>
+    <div class="cert-badges" id="cert-badges"></div>
+    <p style="color:#888; font-size:0.9rem;">
+      You know what code is, how computers think, what AI is,<br>
+      how to write prompts, and how to use Claude Code.<br>
+      <b style="color:var(--cyan)">The future belongs to you! 🚀</b>
+    </p>
+    <div class="mt-20 flex-center">
+      <button class="btn btn-yellow" onclick="celebrate(); goToMap();">🎉 Keep Learning!</button>
+    </div>
+  </div>
+</section>
+
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+const state = {
+  playerName: 'Future Coder',
+  stars: 0,
+  worldsComplete: [false, false, false, false, false],
+  currentWorld: 0,
+  currentStep: 0,
+};
+
+// ════════════════════════════════════════
+//  STARS BACKGROUND
+// ════════════════════════════════════════
+(function createStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 3 + 1;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${Math.random()*100}%; left:${Math.random()*100}%;
+      animation-delay:${Math.random()*3}s;
+      animation-duration:${2+Math.random()*3}s;
+    `;
+    container.appendChild(s);
+  }
+})();
+
+// ════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startJourney() {
+  const name = document.getElementById('player-name').value.trim() || 'Future Coder';
+  state.playerName = name;
+  document.getElementById('map-name').textContent = name;
+  document.getElementById('cert-player-name').textContent = name;
+  showScreen('worldmap');
+}
+
+function goToMap() {
+  updateMap();
+  showScreen('worldmap');
+}
+
+function updateMap() {
+  document.getElementById('star-count').textContent = state.stars;
+  for (let i = 0; i < 5; i++) {
+    const card = document.getElementById('world-card-'+i);
+    if (!card) continue;
+    if (state.worldsComplete[i]) {
+      card.classList.remove('locked');
+      if (!card.querySelector('.world-badge')) {
+        const b = document.createElement('div');
+        b.className = 'world-badge'; b.textContent = '✓ Done!';
+        card.appendChild(b);
+      }
+    }
+    // unlock next
+    if (i > 0 && state.worldsComplete[i-1]) {
+      card.classList.remove('locked');
+    }
+  }
+}
+
+// ════════════════════════════════════════
+//  WORLDS DATA
+// ════════════════════════════════════════
+const worlds = [
+
+  // ── WORLD 0: What is Code? ──────────────
+  {
+    name: 'What is Code?',
+    color: '#3bf0ff',
+    steps: [
+      {
+        type: 'lesson',
+        title: 'Code is Just Instructions!',
+        emoji: '🍳',
+        text: `Imagine you want to make a sandwich. You need to follow steps:
+          <span class="highlight">1. Get two slices of bread<br>2. Add peanut butter<br>3. Add jelly<br>4. Press them together<br>5. Eat and enjoy!</span>
+          <b>Code is exactly the same thing</b> — but instead of telling a person what to do,
+          you're telling a <b>computer</b> what to do, step by step!
+          <span class="tip">💡 Fun fact: The first "coder" ever was Ada Lovelace — a woman in the 1800s! She wrote instructions for a machine before computers even existed.</span>`,
+      },
+      {
+        type: 'lesson',
+        title: 'Computers are Very Obedient (but Literal!)',
+        emoji: '🤖',
+        text: `Computers do EXACTLY what you tell them. Not more, not less.
+          <span class="highlight">If you said "put the bread on the table" and forgot to say "open the bag first" — the computer would try to put bread on the table <b>through the bag!</b></span>
+          This is why coding is like a superpower — you have to think carefully and be very <b>precise</b> (that means exact and clear).
+          <span class="tip">💡 When code has a mistake, it's called a <b style="color:var(--pink)">bug</b>! Fixing bugs is called <b style="color:var(--pink)">debugging</b>. Even the best coders debug their code every day!</span>`,
+      },
+      {
+        type: 'quiz',
+        title: 'Quick Check!',
+        emoji: '🧪',
+        question: 'What is "code"?',
+        options: [
+          { text: '🎮 A video game you play', correct: false, explain: 'Not quite! Games are made WITH code, but code itself is something else.' },
+          { text: '📋 Instructions that tell a computer what to do', correct: true, explain: 'YES! Perfect! Code is step-by-step instructions for computers.' },
+          { text: '🔐 A secret password', correct: false, explain: 'Nope! Passwords are sometimes called codes, but programming code is different.' },
+          { text: '📺 A TV show', correct: false, explain: 'Haha, not quite! TV shows are made using code though!' },
+        ],
+      },
+      {
+        type: 'quiz',
+        title: 'Spot the Bug!',
+        emoji: '🐛',
+        question: `You want to make a robot draw a circle, but something is wrong:\n\n1. Pick up pen\n2. Move in a big circle\n3. Put pen down\n\nWhat's the bug?`,
+        options: [
+          { text: '🔢 There are too many steps', correct: false, explain: 'Nope! The number of steps is fine — but the order has a problem.' },
+          { text: '🔄 Steps 1 and 3 are in the wrong order', correct: true, explain: 'Great catch! You need to put the pen DOWN before you move — otherwise nothing gets drawn!' },
+          { text: '🔵 Circles are impossible to draw', correct: false, explain: "Circles are totally possible! Try again." },
+          { text: '✅ Nothing is wrong', correct: false, explain: "Actually, look at the order: the pen goes DOWN after moving — that won't draw anything!" },
+        ],
+      },
+    ],
+  },
+
+  // ── WORLD 1: Think Like a Computer ─────
+  {
+    name: 'Think Like a Computer',
+    color: '#ffe03b',
+    steps: [
+      {
+        type: 'lesson',
+        title: 'Sequences: Order Matters!',
+        emoji: '🔢',
+        text: `Computers follow instructions <b>one at a time, in order</b>. This is called a <b>sequence</b>.
+          <span class="highlight">Imagine getting dressed for school:<br>1. Put on socks<br>2. Put on shoes<br>
+          If you swap steps 1 and 2, you'd put shoes on before socks — silly!</span>
+          In code, putting things in the right order is <b>super</b> important.
+          <span class="tip">💡 When you write code or give instructions to an AI, always think: "Is this in the right order?"</span>`,
+      },
+      {
+        type: 'blocks',
+        title: 'Robot Dance Party!',
+        emoji: '🕺',
+        text: 'Drag the blocks into the right order to make the robot dance! The robot needs to: <b>MOVE forward → TURN around → SAY "Woohoo!"</b>',
+      },
+      {
+        type: 'lesson',
+        title: 'Loops: Do it Again and Again!',
+        emoji: '🔁',
+        text: `What if you want to draw 100 circles? You don't have to write "draw circle" 100 times!
+          Programmers use <b>loops</b> — a way to repeat instructions.
+          <div class="code-block">
+            <span class="cm">// Without a loop (hard way!):</span><br>
+            <span class="fn">drawCircle</span>()<br>
+            <span class="fn">drawCircle</span>()<br>
+            <span class="fn">drawCircle</span>()<br>
+            ...<span class="cm"> x100!</span><br><br>
+            <span class="cm">// With a loop (smart way!):</span><br>
+            <span class="kw">repeat</span> 100 <span class="kw">times</span> {<br>
+            &nbsp;&nbsp;<span class="fn">drawCircle</span>()<br>
+            }
+          </div>
+          <span class="tip">💡 Loops are one of the most powerful ideas in all of coding. Real AI programs loop millions of times!</span>`,
+      },
+      {
+        type: 'quiz',
+        title: 'Loop Master!',
+        emoji: '🏆',
+        question: 'You want a robot to say "Hello!" 5 times. What\'s the smartest way?',
+        options: [
+          { text: '📝 Write say("Hello!") five times', correct: false, explain: "That works, but it's not smart! What if you needed 1000 times?" },
+          { text: '🔁 Use: repeat 5 times { say("Hello!") }', correct: true, explain: "BRILLIANT! A loop is the smart, clean way to repeat things. Coders love loops!" },
+          { text: '🤷 It\'s impossible to do it 5 times', correct: false, explain: "Of course it's possible! Think about how to repeat instructions..." },
+          { text: '💬 Ask a friend to count for you', correct: false, explain: "Haha! But the computer can count for us — that's what loops do!" },
+        ],
+      },
+    ],
+  },
+
+  // ── WORLD 2: Meet AI! ───────────────────
+  {
+    name: 'Meet AI!',
+    color: '#ff3bac',
+    steps: [
+      {
+        type: 'lesson',
+        title: 'What is Artificial Intelligence?',
+        emoji: '🧠',
+        text: `<b>Artificial</b> means "made by humans." <b>Intelligence</b> means "being smart."
+          So AI = <b>human-made smartness</b>!
+          <span class="highlight">Imagine you showed a toddler 1,000,000 pictures of cats and dogs, saying "cat" or "dog" each time. Eventually they'd get really good at telling them apart!<br><br>
+          AI learns the same way — by looking at <b>millions of examples</b>.</span>
+          <span class="tip">💡 Claude (the AI you might use!) has read more books and websites than any human could read in 1,000 lifetimes!</span>`,
+      },
+      {
+        type: 'lesson',
+        title: 'AI is Like a Super-Smart Friend',
+        emoji: '✨',
+        text: `Imagine having a friend who:
+          <span class="highlight">
+          🎨 Can draw anything you describe<br>
+          📖 Has read every book ever written<br>
+          💻 Can write code for you<br>
+          🌍 Speaks every language<br>
+          🧮 Can do maths super fast<br>
+          💡 Never gets tired or grumpy
+          </span>
+          That's what AI can be for you! But here's the <b>really important</b> part:
+          <span class="tip">💡 <b>YOU</b> are still the boss. AI is a tool — like a calculator or a hammer. The brilliant ideas come from <b>your brain</b>. AI helps you build them!</span>`,
+      },
+      {
+        type: 'quiz',
+        title: 'AI Quiz!',
+        emoji: '🤖',
+        question: 'How does AI learn to do things?',
+        options: [
+          { text: '👨‍💻 A person programs every single answer in', correct: false, explain: "Not quite! Programmers build the AI, but they can't put in every possible answer manually." },
+          { text: '📚 It studies millions and millions of examples', correct: true, explain: "YES! AI learns from huge amounts of examples — this is called Machine Learning!" },
+          { text: '🔮 It uses magic', correct: false, explain: "It might seem like magic, but it's really clever math and millions of examples!" },
+          { text: '😴 It learns while sleeping, like humans', correct: false, explain: "Haha! AI doesn't need sleep. But it does learn from examples, kind of like studying." },
+        ],
+      },
+      {
+        type: 'quiz',
+        title: 'You and AI!',
+        emoji: '🤝',
+        question: 'When working with AI, who comes up with the great ideas?',
+        options: [
+          { text: '🤖 The AI always decides everything', correct: false, explain: "Nope! AI helps, but it doesn't have your creativity, experiences, or dreams!" },
+          { text: '🧒 You do! AI is your powerful tool', correct: true, explain: "EXACTLY RIGHT! You're the creative genius. AI is your supercharged helper. Together you're unstoppable!" },
+          { text: '🤷 Nobody — it just happens randomly', correct: false, explain: "Not at all! Great things come from great thinkers — that's you!" },
+          { text: '👩‍💻 Only professional adults can use AI', correct: false, explain: "No way! Kids are amazing at using AI. You're learning right now!" },
+        ],
+      },
+    ],
+  },
+
+  // ── WORLD 3: Talk to AI ─────────────────
+  {
+    name: 'Talk to AI',
+    color: '#3bff8a',
+    steps: [
+      {
+        type: 'lesson',
+        title: 'What is a Prompt?',
+        emoji: '💬',
+        text: `When you talk to an AI, what you type or say is called a <b>prompt</b>.
+          A great prompt is like a <b>great question or instruction</b> — the better you ask, the better the answer!
+          <span class="highlight">
+          ❌ Bad prompt: "dog"<br><br>
+          ✅ Better prompt: "Tell me 3 fun facts about dogs"<br><br>
+          ✨ Great prompt: "I'm 8 years old and love animals. Tell me 3 amazing and funny facts about dogs that would surprise my friends!"
+          </span>
+          <span class="tip">💡 The skill of writing great prompts is called <b>Prompt Engineering</b>. It's one of the most valuable skills of the future!</span>`,
+      },
+      {
+        type: 'lesson',
+        title: 'The 3 Secrets of Great Prompts',
+        emoji: '🔑',
+        text: `<b>Secret 1: Be Specific</b>
+          <span class="highlight">Instead of: "Write a story"<br>Say: "Write a short funny story about a robot who learns to make pancakes"</span>
+          <b>Secret 2: Give Context</b>
+          <span class="highlight">Tell the AI who you are or what you need it for:<br>"I'm 8 years old. Explain what gravity is in a fun way"</span>
+          <b>Secret 3: Ask for What You Want</b>
+          <span class="highlight">Be clear about the format:<br>"Give me 5 bullet points" or "Write it as a poem" or "Explain it simply"</span>
+          <span class="tip">💡 Practice writing prompts every day and you'll get amazingly good at it!</span>`,
+      },
+      {
+        type: 'promptbuilder',
+        title: 'Build Your First Prompt!',
+        emoji: '✍️',
+        text: 'Try writing a prompt to ask the AI something. Use the secrets you just learned! Then click "Ask AI" to see a sample response.',
+        examples: [
+          { q: 'Tell me about space', a: "Space is HUGE! There are over 2 trillion galaxies in the observable universe. Our Milky Way galaxy alone has 200-400 billion stars — and most of them probably have planets! The nearest star to our Sun is Proxima Centauri, which is so far away that light from it takes 4.2 YEARS to reach us. And if you could travel at the speed of light, you could circle the Earth 7.5 times in just one second! 🚀✨" },
+          { q: 'funny story about a robot', a: "Once upon a time, there was a robot named Beep-3000 who really, REALLY wanted to eat pizza. The problem? Robots can't eat! Beep tried putting pizza in his USB port (sparks flew!), his battery compartment (very cheesy), and even his ear speaker (it just played 'Pizza Time' music). Finally, his human friend said: 'Just LOOK at the pizza and be happy for me!' Beep stared at the pizza for 3 hours straight. 'This,' said Beep, 'is the greatest day of my existence.' 🤖🍕" },
+          { q: 'explain coding', a: "Coding is like writing a magic recipe for a computer! Imagine you want a robot to make you a sandwich. You'd have to tell it EVERY step: 'Open the bread bag. Take out two slices. Open the peanut butter. Pick up the knife...' If you forget even ONE step, the robot gets confused! That's coding — telling computers exactly what to do, step by step, so they can do amazing things like run games, send messages, and help us learn. Pretty cool, right? 💻✨" },
+        ],
+      },
+      {
+        type: 'quiz',
+        title: 'Best Prompt Challenge!',
+        emoji: '🏆',
+        question: 'You want to learn about dinosaurs. Which is the BEST prompt?',
+        options: [
+          { text: '🦕 "dinosaurs"', correct: false, explain: "Too short! The AI doesn't know what you want to know about dinosaurs." },
+          { text: '🦖 "Tell me everything about every dinosaur ever"', correct: false, explain: "Way too broad! 'Everything about every dinosaur' would fill a library. Be more specific!" },
+          { text: '✨ "I\'m 8 years old. What are the 3 coolest dinosaur facts that would amaze my class?"', correct: true, explain: "BRILLIANT! You said who you are, what you want (3 facts), and why (for class). The AI can give a perfect answer!" },
+          { text: '🤔 "do you know about dinosaurs"', correct: false, explain: "This would just get a 'yes' answer! Ask for what you actually want to know." },
+        ],
+      },
+    ],
+  },
+
+  // ── WORLD 4: Claude Code! ───────────────
+  {
+    name: 'Claude Code!',
+    color: '#ff8c3b',
+    steps: [
+      {
+        type: 'lesson',
+        title: 'What is Claude Code?',
+        emoji: '⚡',
+        text: `<b>Claude Code</b> is a special AI that lives right inside your computer's terminal (a black window where you type commands).
+          <span class="highlight">You type what you want to BUILD and Claude Code actually <b>creates</b> it for you — writing real code, fixing bugs, making websites, and more!</span>
+          It's like having a professional programmer as your best friend who:
+          <span class="highlight">
+          🏗️ Builds things you describe in plain English<br>
+          🐛 Finds and fixes bugs automatically<br>
+          📖 Explains what code does<br>
+          🚀 Works on BIG projects for hours
+          </span>
+          <span class="tip">💡 Claude Code was built by a company called <b>Anthropic</b>. Their mission is to make sure AI is safe and helpful for everyone — including YOU!</span>`,
+      },
+      {
+        type: 'lesson',
+        title: 'Agentic AI: AI That Takes Action!',
+        emoji: '🤖',
+        text: `Normal AI just <b>answers questions</b>. But <b>Agentic AI</b> actually <b>does things</b>!
+          <span class="highlight">
+          🗣️ Normal AI: "Here's how you could build a website..."<br><br>
+          ⚡ Agentic AI (like Claude Code): "Done! I just built and tested your website. Here it is!"
+          </span>
+          Claude Code is agentic — it can:
+          <span class="highlight">
+          📁 Create and edit files on your computer<br>
+          🔍 Search through thousands of lines of code<br>
+          🧪 Run tests to check if things work<br>
+          🔄 Try things, see if they work, and try again
+          </span>
+          <span class="tip">💡 This is why learning to give <b>clear instructions</b> (like with prompts!) is so important. The better you describe what you want, the more amazing things agentic AI can build!</span>`,
+      },
+      {
+        type: 'lesson',
+        title: 'You Are the Future!',
+        emoji: '🚀',
+        text: `Here's the amazing truth: the kids who learn to work WITH AI will be able to do things that once took whole teams of people.
+          <span class="highlight">
+          💡 Have a game idea? Claude Code can help build it.<br>
+          🌍 Want to help solve a problem? AI can help you research it.<br>
+          🎨 Want to create art? AI can help design it.<br>
+          📱 Want to build an app? Claude Code can code it!
+          </span>
+          The most important skill isn't memorizing code. It's:
+          <span class="highlight" style="text-align:center; font-size:1.1em;">
+          <b style="color:var(--yellow)">✨ Knowing what you WANT to build<br>
+          💬 Asking clearly for what you need<br>
+          🧠 Understanding what the AI creates<br>
+          🔄 Giving good feedback to improve it</b>
+          </span>
+          <span class="tip">💡 <b>That's YOU!</b> You're already learning these skills right now. Keep going — you're going to do incredible things.</span>`,
+      },
+      {
+        type: 'quiz',
+        title: 'Final Boss Quiz!',
+        emoji: '🏆',
+        question: 'What makes "agentic AI" like Claude Code special?',
+        options: [
+          { text: '📚 It knows more facts than normal AI', correct: false, explain: "That's not what makes it special. Normal AI also knows tons of facts!" },
+          { text: '⚡ It actually DOES things — creates files, writes and runs code, takes action!', correct: true, explain: "🎉 PERFECT! Agentic AI doesn't just talk — it acts! It builds real things on your computer!" },
+          { text: '🎮 It can play video games for you', correct: false, explain: "Ha! Not quite. It builds things rather than playing games (though it could help you build a game!)." },
+          { text: '📡 It can connect to the internet', correct: false, explain: "Many AIs can do that — what makes Claude Code special is that it takes real actions and builds things!" },
+        ],
+      },
+    ],
+  },
+];
+
+// ════════════════════════════════════════
+//  WORLD OPEN / STEP RENDER
+// ════════════════════════════════════════
+function openWorld(worldIndex) {
+  // Check locked
+  if (worldIndex > 0 && !state.worldsComplete[worldIndex-1]) {
+    shakeCard(worldIndex); return;
+  }
+  state.currentWorld = worldIndex;
+  state.currentStep = 0;
+  renderStep();
+  showScreen('lesson');
+}
+
+function shakeCard(i) {
+  const card = document.getElementById('world-card-'+i);
+  card.style.animation = 'shake 0.5s';
+  setTimeout(() => card.style.animation = '', 600);
+}
+
+function renderStep() {
+  const world = worlds[state.currentWorld];
+  const step  = world.steps[state.currentStep];
+  const total = world.steps.length;
+  const pct   = Math.round((state.currentStep / total) * 100);
+
+  document.getElementById('lesson-world-label').textContent = 'World ' + (state.currentWorld+1) + ': ' + world.name;
+  document.getElementById('lesson-title').textContent = step.title;
+  document.getElementById('lesson-progress').style.width = pct + '%';
+  document.getElementById('lesson-stars').textContent = state.stars;
+
+  const card = document.getElementById('lesson-card');
+
+  if (step.type === 'lesson')       renderLesson(card, step);
+  else if (step.type === 'quiz')    renderQuiz(card, step);
+  else if (step.type === 'blocks')  renderBlocks(card, step);
+  else if (step.type === 'promptbuilder') renderPromptBuilder(card, step);
+}
+
+// ── Lesson ──
+function renderLesson(card, step) {
+  card.innerHTML = `
+    <span class="lesson-emoji">${step.emoji}</span>
+    <div class="lesson-text">${step.text}</div>
+    <div class="text-center">
+      <button class="btn btn-primary" onclick="nextStep()">Got it! Next →</button>
+    </div>
+  `;
+}
+
+// ── Quiz ──
+function renderQuiz(card, step) {
+  const opts = step.options.map((o, i) => `
+    <button class="btn-option" id="opt-${i}" onclick="checkAnswer(${i})">
+      ${o.text}
+    </button>
+  `).join('');
+
+  card.innerHTML = `
+    <span class="lesson-emoji">${step.emoji}</span>
+    <div class="quiz-q">${step.question.replace(/\n/g, '<br>')}</div>
+    <div id="quiz-opts">${opts}</div>
+    <div class="quiz-feedback" id="quiz-fb"></div>
+    <div class="text-center mt-20 hidden" id="quiz-next">
+      <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+    </div>
+  `;
+}
+
+function checkAnswer(i) {
+  const world = worlds[state.currentWorld];
+  const step  = world.steps[state.currentStep];
+  const opt   = step.options[i];
+  const fb    = document.getElementById('quiz-fb');
+  const opts  = document.querySelectorAll('.btn-option');
+
+  opts.forEach(o => o.disabled = true);
+
+  if (opt.correct) {
+    opts[i].classList.add('correct');
+    fb.className = 'quiz-feedback correct-fb';
+    fb.innerHTML = '🎉 ' + opt.explain;
+    state.stars += 1;
+    document.getElementById('lesson-stars').textContent = state.stars;
+    celebrate();
+  } else {
+    opts[i].classList.add('wrong');
+    fb.className = 'quiz-feedback wrong-fb';
+    fb.innerHTML = '🤔 ' + opt.explain;
+    // show correct
+    step.options.forEach((o2, j) => {
+      if (o2.correct) opts[j].classList.add('correct');
+    });
+  }
+
+  document.getElementById('quiz-next').classList.remove('hidden');
+}
+
+// ── Blocks ──
+let dropZone = [];
+function renderBlocks(card, step) {
+  dropZone = [];
+  const palette = [
+    { label: '🚶 Move Forward', cls: 'block-move', id: 'b-move' },
+    { label: '🔊 Say "Woohoo!"', cls: 'block-say',  id: 'b-say'  },
+    { label: '🔄 Turn Around',  cls: 'block-turn', id: 'b-turn' },
+  ];
+
+  const paletteHTML = palette.map(b =>
+    `<div class="block ${b.cls}" draggable="true" id="${b.id}"
+       ondragstart="dragStart(event,'${b.id}')">${b.label}</div>`
+  ).join('');
+
+  card.innerHTML = `
+    <span class="lesson-emoji">${step.emoji}</span>
+    <div class="lesson-text">${step.text}</div>
+    <div class="blocks-label">Available Blocks (drag them!)</div>
+    <div class="blocks-area" id="palette">${paletteHTML}</div>
+    <div class="blocks-label">Your Program (drag here in the right order)</div>
+    <div class="blocks-area" id="dropzone"
+      ondragover="event.preventDefault()"
+      ondrop="dropBlock(event)"
+      style="min-height:70px; border-color:#555;"></div>
+    <div id="robot-display">
+      <span id="robot-runner">🤖</span>
+      <div id="robot-speech"></div>
+    </div>
+    <div class="flex-center mt-20">
+      <button class="btn btn-sm" style="background:#333; color:#aaa;" onclick="clearDropzone()">🗑 Clear</button>
+      <button class="btn btn-primary" onclick="runBlocks()">▶ Run Program!</button>
+    </div>
+    <div class="quiz-feedback hidden" id="blocks-fb"></div>
+    <div class="text-center mt-20 hidden" id="blocks-next">
+      <button class="btn btn-secondary" onclick="nextStep()">Next →</button>
+    </div>
+  `;
+}
+
+let draggingId = null;
+function dragStart(e, id) { draggingId = id; e.dataTransfer.effectAllowed = 'copy'; }
+function dropBlock(e) {
+  e.preventDefault();
+  if (!draggingId) return;
+  const src = document.getElementById(draggingId);
+  const clone = src.cloneNode(true);
+  clone.id = draggingId + '-' + Date.now();
+  clone.removeAttribute('ondragstart');
+  clone.draggable = false;
+  clone.style.cursor = 'default';
+  clone.onclick = null;
+  document.getElementById('dropzone').appendChild(clone);
+  draggingId = null;
+}
+function clearDropzone() {
+  document.getElementById('dropzone').innerHTML = '';
+}
+
+function runBlocks() {
+  const dz = document.getElementById('dropzone');
+  const blocks = Array.from(dz.children).map(b => b.id.split('-')[1]);
+  const robot = document.getElementById('robot-runner');
+  const speech = document.getElementById('robot-speech');
+  const fb = document.getElementById('blocks-fb');
+
+  // correct order: move, turn, say
+  const correct = ['move','turn','say'];
+  const isCorrect = blocks.length === 3 &&
+    blocks[0] === 'move' && blocks[1] === 'turn' && blocks[2] === 'say';
+
+  // animate robot regardless
+  robot.style.transform = 'translateX(60px)';
+  setTimeout(() => {
+    robot.style.transform = 'translateX(60px) scaleX(-1)';
+    setTimeout(() => {
+      speech.textContent = '🎉 Woohoo!';
+      speech.style.display = 'block';
+      setTimeout(() => speech.style.display = 'none', 2000);
+    }, 500);
+  }, 600);
+
+  setTimeout(() => {
+    robot.style.transform = 'translateX(0)';
+    if (isCorrect) {
+      fb.className = 'quiz-feedback correct-fb';
+      fb.textContent = '🎉 Perfect order! Your robot danced exactly right! +1 star!';
+      fb.classList.remove('hidden');
+      state.stars += 1;
+      document.getElementById('lesson-stars').textContent = state.stars;
+      celebrate();
+      document.getElementById('blocks-next').classList.remove('hidden');
+    } else if (blocks.length === 3) {
+      fb.className = 'quiz-feedback wrong-fb';
+      fb.textContent = '🤔 The robot tried but the order was a bit off. Try: Move → Turn → Say!';
+      fb.classList.remove('hidden');
+    } else {
+      fb.className = 'quiz-feedback wrong-fb';
+      fb.textContent = '⚠️ Add all 3 blocks first, then run!';
+      fb.classList.remove('hidden');
+    }
+  }, 1400);
+}
+
+// ── Prompt Builder ──
+function renderPromptBuilder(card, step) {
+  card.innerHTML = `
+    <span class="lesson-emoji">${step.emoji}</span>
+    <div class="lesson-text">${step.text}</div>
+    <div class="blocks-label">Your Prompt</div>
+    <textarea class="prompt-input" id="prompt-input" placeholder="Type your prompt here... (try using the 3 secrets!)"
+      oninput="updatePromptHints()"></textarea>
+    <div id="prompt-hints" style="font-size:0.8rem; color:#666; margin:6px 0 14px; min-height:20px;"></div>
+    <div class="flex-center">
+      <button class="btn btn-primary" onclick="simulateAI()">🤖 Ask AI!</button>
+      <button class="btn btn-sm" style="background:#222; border:1px solid #444; color:#888;"
+        onclick="loadExample()">💡 Show Example</button>
+    </div>
+    <div class="prompt-response" id="prompt-response">
+      <div class="ai-label">🤖 Claude says:</div>
+      <div id="response-text"></div>
+    </div>
+    <div class="text-center mt-20 hidden" id="prompt-next">
+      <button class="btn btn-secondary" onclick="nextStep()">That was awesome! Next →</button>
+    </div>
+  `;
+}
+
+function updatePromptHints() {
+  const v = document.getElementById('prompt-input').value;
+  const hints = document.getElementById('prompt-hints');
+  const tips = [];
+  if (v.length > 10) tips.push('<span style="color:var(--green)">✓ Good length</span>');
+  if (v.length > 30) tips.push('<span style="color:var(--green)">✓ Detailed</span>');
+  if (/\?/.test(v)) tips.push('<span style="color:var(--cyan)">✓ Has a question</span>');
+  if (/i am|i\'m|i\'m|year old|years old/i.test(v)) tips.push('<span style="color:var(--yellow)">✓ Gives context</span>');
+  hints.innerHTML = tips.join('  ');
+}
+
+const aiResponses = [
+  "That's a great question! Here's what I know: The universe is about 13.8 billion years old and contains more stars than grains of sand on all of Earth's beaches. Pretty mind-blowing, right? Our own Sun is just one of those 200+ billion stars in the Milky Way. And scientists think there could be over 100 BILLION galaxies out there! 🌟",
+  "Wow, I love your curiosity! Did you know that octopuses have THREE hearts, NINE brains (one main brain + one in each arm!), and blue blood? They can also squeeze through any hole bigger than their beak — which is their only hard part! Some octopuses can even walk on land for short periods. 🐙",
+  "Here's something amazing to think about: every atom in your body was once inside a star! When old stars explode (called supernovas), they scatter atoms across space. Those atoms became part of Earth, and eventually... YOU! Carl Sagan said it best: 'We are made of star-stuff.' ⭐",
+  "Great prompt! Here's a fun fact: honey never goes bad. Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still perfectly edible! Honey is so good at resisting bacteria that it was even used as a wound dressing in ancient medicine. 🍯",
+  "I love that you asked! Computers speak in a secret language of 0s and 1s called binary. Everything — every photo, video, and game — is just a huge string of 0s and 1s! For example, the letter 'A' is 01000001. Your brain is actually doing something similar — neurons either fire or they don't, like 1s and 0s! 🧠💻",
+];
+
+let exIdx = 0;
+function simulateAI() {
+  const input = document.getElementById('prompt-input').value.trim();
+  if (!input) {
+    alert('Type something first! 😊');
+    return;
+  }
+  const resp = document.getElementById('prompt-response');
+  const text = document.getElementById('response-text');
+  resp.style.display = 'block';
+
+  // pick a response
+  const chosen = aiResponses[exIdx % aiResponses.length];
+  exIdx++;
+
+  // typewriter
+  text.textContent = '';
+  let i = 0;
+  const timer = setInterval(() => {
+    text.textContent += chosen[i++];
+    if (i >= chosen.length) {
+      clearInterval(timer);
+      document.getElementById('prompt-next').classList.remove('hidden');
+      state.stars += 1;
+      document.getElementById('lesson-stars').textContent = state.stars;
+    }
+  }, 18);
+}
+
+function loadExample() {
+  const examples = [
+    "I'm 8 years old. Tell me 3 amazing facts about space that would blow my mind!",
+    "Explain what loops are in coding using a fun example with pizza",
+    "Write me a short funny story about a robot who wants to eat ice cream",
+    "I love dinosaurs. What are the 3 biggest dinosaurs that ever lived? Give fun facts!",
+  ];
+  document.getElementById('prompt-input').value = examples[Math.floor(Math.random()*examples.length)];
+  updatePromptHints();
+}
+
+// ════════════════════════════════════════
+//  NEXT STEP / WORLD COMPLETE
+// ════════════════════════════════════════
+function nextStep() {
+  const world = worlds[state.currentWorld];
+  state.currentStep++;
+
+  if (state.currentStep >= world.steps.length) {
+    // World complete!
+    state.worldsComplete[state.currentWorld] = true;
+    state.stars += 3; // bonus stars
+    celebrate();
+    showWorldComplete();
+  } else {
+    renderStep();
+    window.scrollTo(0,0);
+  }
+}
+
+function showWorldComplete() {
+  const world = worlds[state.currentWorld];
+  const card = document.getElementById('lesson-card');
+  document.getElementById('lesson-title').textContent = 'World Complete!';
+  document.getElementById('lesson-progress').style.width = '100%';
+
+  const nextWorld = state.currentWorld < 4 ? worlds[state.currentWorld+1] : null;
+
+  card.innerHTML = `
+    <div style="text-align:center; padding:10px 0;">
+      <div style="font-size:5rem; margin-bottom:16px;">🎉</div>
+      <div style="font-size:1.6rem; font-weight:900; color:var(--yellow); margin-bottom:8px;">
+        World ${state.currentWorld+1} Complete!
+      </div>
+      <div style="color:#aaa; margin-bottom:20px;">You earned <b style="color:var(--yellow)">+3 bonus stars</b>!</div>
+      <div style="font-size:2rem; margin-bottom:20px;">
+        ${'⭐'.repeat(Math.min(state.stars, 20))}
+      </div>
+      <div style="color:#888; font-size:0.95rem; margin-bottom:28px;">
+        Total stars: <b style="color:var(--yellow)">${state.stars}</b>
+      </div>
+      ${nextWorld ? `
+        <div style="background:var(--card2); border-radius:16px; padding:16px; margin-bottom:24px; border:1px solid #333;">
+          <div style="font-size:0.8rem; color:#666; margin-bottom:6px;">UP NEXT:</div>
+          <div style="font-size:1.1rem; font-weight:700;">${nextWorld.name}</div>
+        </div>
+      ` : `
+        <div style="background:linear-gradient(135deg,rgba(108,59,255,0.2),rgba(255,59,172,0.2)); border-radius:16px; padding:16px; margin-bottom:24px; border:1px solid #555;">
+          <div style="font-size:1rem; font-weight:700; color:var(--cyan);">🏆 You've completed ALL worlds!</div>
+          <div style="color:#aaa; font-size:0.9rem; margin-top:6px;">Check out your certificate below!</div>
+        </div>
+      `}
+      <div class="flex-center">
+        <button class="btn btn-primary" onclick="goToMap()">🗺 Back to Map</button>
+        ${state.currentWorld === 4 ? `<button class="btn btn-yellow" onclick="showCertificate()">🏆 My Certificate!</button>` : ''}
+      </div>
+    </div>
+  `;
+  updateMap();
+}
+
+// ════════════════════════════════════════
+//  CERTIFICATE
+// ════════════════════════════════════════
+function showCertificate() {
+  document.getElementById('cert-player-name').textContent = state.playerName;
+  const badgesData = [
+    { done: state.worldsComplete[0], label: '🍳 Code Chef' },
+    { done: state.worldsComplete[1], label: '🔢 Sequence Master' },
+    { done: state.worldsComplete[2], label: '🧠 AI Explorer' },
+    { done: state.worldsComplete[3], label: '💬 Prompt Pro' },
+    { done: state.worldsComplete[4], label: '⚡ Claude Coder' },
+  ];
+  const doneBadges = badgesData.filter(b => b.done);
+  const badgeHTML = doneBadges.length
+    ? doneBadges.map(b => `<div class="cert-badge">${b.label}</div>`).join('')
+    : '<div style="color:#666; font-size:0.9rem;">Complete worlds to earn badges!</div>';
+
+  document.getElementById('cert-badges').innerHTML = badgeHTML;
+
+  const allDone = state.worldsComplete.every(Boolean);
+  const certTitle = document.querySelector('#certificate h1');
+  if (allDone) {
+    certTitle.textContent = '🏆 Master Certificate of Achievement';
+    celebrate();
+  }
+
+  showScreen('cert-screen');
+}
+
+// ════════════════════════════════════════
+//  CELEBRATION CONFETTI
+// ════════════════════════════════════════
+function celebrate() {
+  const container = document.getElementById('confetti');
+  const colors = ['#6c3bff','#ff3bac','#3bf0ff','#ffe03b','#3bff8a','#ff8c3b'];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${1+Math.random()*2}s;
+      animation-delay:${Math.random()*0.5}s;
+    `;
+    container.appendChild(p);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 3500);
+}
+
+// ════════════════════════════════════════
+//  SHAKE ANIMATION (CSS injection)
+// ════════════════════════════════════════
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+`;
+document.head.appendChild(shakeStyle);
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+document.getElementById('player-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startJourney();
+});
+</script>
+</body>
+</html>
